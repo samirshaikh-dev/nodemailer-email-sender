@@ -51,6 +51,10 @@ const redis = {
   concurrency: readNumber(process.env.QUEUE_CONCURRENCY, 5),
 };
 
+const bullBoard = {
+  basePath: process.env.BULL_BOARD_PATH || "/admin/queues",
+};
+
 // Bounds each network round trip made by the readiness probe so an unresponsive dependency
 // cannot hold an HTTP request open. Mirrors the MONGO_TIMEOUT_MS rationale.
 const health = {
@@ -114,6 +118,7 @@ export const config = {
     timeoutMs: readNumber(process.env.MONGO_TIMEOUT_MS, 5000),
   },
   redis,
+  bullBoard,
   health,
   logs,
 };

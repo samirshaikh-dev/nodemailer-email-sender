@@ -31,6 +31,9 @@
   | `POST` | [`/send`](#2-post-send-async-queue-mode) | Dispatch bulk or single emails (async queue) | `202 Accepted` |
   | `POST` | [`/send?sync=true`](#3-post-sendsynctrue-synchronous-mode) | Send emails immediately inline (synchronous) | `200 OK` |
   | `GET` | [`/send/status/:jobId`](#4-get-sendstatusjobid) | Query background job state and results | `200 OK` / `404` |
+  | `GET` | [`/admin/queues`](#5-get-adminqueues-bullmq-dashboard) | BullMQ web UI dashboard for email queues | `200 OK` / `503` |
+
+  > **Note**: Convenient shortcuts [`/admin`](#5-get-adminqueues-bullmq-dashboard) and [`/dashboard`](#5-get-adminqueues-bullmq-dashboard) redirect automatically to `/admin/queues`.
 
   ---
 
@@ -359,7 +362,27 @@
 
   ---
 
-  ## 5. Error Responses
+  ## 5. `GET /admin/queues` (BullMQ Dashboard)
+
+  Full web UI powered by **Bull Board** (`@bull-board/ui` & `@bull-board/express`) for monitoring and managing the `emailQueue`.
+
+  - **UI Route**: `/admin/queues` (or redirects `/admin`, `/dashboard`)
+  - **API Subpaths**: `/admin/queues/api/...`
+  - **Default Port**: `http://localhost:4000/admin/queues`
+
+  ### Features:
+  - Real-time job counters: **active**, **waiting**, **completed**, **failed**, **delayed**, and **paused**.
+  - Job inspection: View recipient payloads, attempts, stack traces, and worker duration.
+  - Queue actions: Retry failed jobs, promote delayed jobs, clean old jobs, or pause/resume queues.
+  - Optional **HTTP Basic Authentication** via `BULL_BOARD_USERNAME` & `BULL_BOARD_PASSWORD`.
+
+  ### Responses:
+  - **Queue Active (`200 OK`)**: Returns the Bull Board React UI dashboard.
+  - **Queue Disabled (`503 Service Unavailable`)**: When `REDIS_URL` is omitted, returns an informative status notice (HTML in browser, or JSON with `{ "ok": false, "error": "..." }`).
+
+  ---
+
+  ## 6. Error Responses
 
   All error responses consistently return `{ "ok": false, "error": "<message>" }`.
 

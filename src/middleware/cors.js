@@ -7,7 +7,7 @@ import cors from "cors";
 // being parsed, and so error responses from later middleware still carry CORS headers.
 export const corsMiddleware = cors({
   origin: "*",
-  methods: ["GET", "POST", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   maxAge: 86400,
 });

@@ -35,6 +35,7 @@ rate limiting per recipient domain.
 | Logging | Winston | 3.19.0 |
 | Containers | Docker + Docker Compose | Compose v5.5.1 |
 | Local Mock Mail | Mailpit | latest |
+| Local Queue Inspection | RedisInsight | latest |
 
 There is **no** build step, transpiler, test runner, or linter. Source is plain ESM run directly by
 Node. Do not introduce a build step without explicit agreement — it changes the deployment contract.
@@ -53,13 +54,15 @@ npm start                # node src/server.js
 
 Default port `4000`. Verify with `curl http://localhost:4000/health` → `{"status":"ok", ...}`.
 
-### Docker (App + MongoDB + Redis + Mailpit):
+### Docker (App + MongoDB + Redis + Mailpit + RedisInsight):
 ```bash
-npm run docker:up        # starts all 4 containers with live reload
+npm run docker:up        # starts all 5 containers with live reload
 npm run docker:logs      # stream application logs
 npm run docker:down      # stop all containers
 ```
 Mailpit Web UI: `http://localhost:8025` captures all outgoing mail safely for inspection.
+RedisInsight Web UI: `http://localhost:5540` browses the queue's Redis keys (`bull:emailQueue:*`)
+and runs commands against the local `redis` service.
 
 ---
 
@@ -489,7 +492,7 @@ Added for production reliability when dispatching bulk emails (> 100 recipients)
 
 Added to streamline local development and ensure production safety:
 
-- **Complete local Docker Compose ecosystem:** Orchestrates `app`, `mongodb` (7.0), `redis` (7-alpine), and `mailpit` (safe mock SMTP on `:1025` + visual Web UI on `:8025`).
+- **Complete local Docker Compose ecosystem:** Orchestrates `app`, `mongodb` (7.0), `redis` (7-alpine), and `mailpit` (safe mock SMTP on `:1025` + visual Web UI on `:8025`). `redisinsight` was added later — see Phase 7.
 - **NPM Docker scripts:** Added `docker:up`, `docker:down`, `docker:logs` to `package.json`.
 - **Environment awareness:** Added `NODE_ENV` handling in `config/env.js`.
 - **Production fail-fast safeguards:** In `NODE_ENV=production`, `config/env.js` strictly requires `REDIS_URL` and `MONGODB_URI`, immediately throwing on boot if missing to guarantee reliability in production.
@@ -524,6 +527,30 @@ Closes the §12 gap where `GET /health` could not gate traffic on dependency sta
   in `db.js`. Both return a status instead of throwing, so a probe can never fail the request.
 - **New `HEALTH_PROBE_TIMEOUT_MS`** (default 5000) bounds every network round trip; a hung
   dependency cannot hold the request open.
+
+### Phase 7 — RedisInsight
+
+A queue is only observable through `GET /send/status/:jobId` while it is young. Once jobs pile up
+in `waiting`/`delayed`/`failed`, the raw Redis state is the only place the real cause lives, so a
+GUI browser is worth more than another polling endpoint:
+
+- **New `redisinsight` compose service** (`redis/redisinsight:latest`) on `:5540`, gated on
+  `redis` being healthy, with its sqlite app DB on the `redisinsight_data` named volume.
+- **Connection preconfigured via env**, not clicked in the UI: `RI_REDIS_HOST=redis`,
+  `RI_REDIS_PORT=6379`, `RI_REDIS_ALIAS=email-sender-redis`. Without these, a fresh container
+  shows an empty connection list on every `docker:down` + `docker:up` cycle.
+- **Zero application code changed.** RedisInsight is an out-of-band client that dials Redis over
+  TCP, so `REDIS_URL`, `config/redis.js`, `queue/emailQueue.js`, and the `redis` check in
+  `health.js` are all untouched. The `RI_*` variables are container-local to RedisInsight and are
+  deliberately **not** added to `config/env.js` or `.env.example` — the app has no business
+  reading them.
+- **Dev-only, never deployed.** Like `mailpit`, this is a local-development tool. It is not
+  reachable in production, and `RI_ACCEPT_TERMS_AND_CONDITIONS` is left at its default so the
+  EULA prompt is not silently accepted on someone's behalf.
+- **Note on env var naming:** the documented variables are `RI_APP_HOST`, `RI_APP_PORT`,
+  `RI_LOG_LEVEL` (winston levels, not `notice`), and the singular `RI_REDIS_*` family. There is
+  no `RI_SERVER_PORT`, `RI_LOGGER_LEVEL`, or JSON-array `RI_REDIS_HOSTS`; a compose file using
+  those starts cleanly and then silently fails to preconfigure anything.
 
 ---
 

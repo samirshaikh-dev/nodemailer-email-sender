@@ -68,14 +68,15 @@ it can lag a change. Keep it accurate in the same change that alters behaviour (
 | Install | `npm install` |
 | Run (dev, live reload) | `npm run dev` |
 | Run (plain) | `npm start` |
-| Full local stack (app + mongo + redis + mailpit) | `npm run docker:up` |
+| Full local stack (app + mongo + redis + mailpit + redisinsight) | `npm run docker:up` |
 | Stream app logs | `npm run docker:logs` |
 | Stop stack | `npm run docker:down` |
 | Syntax check a module | `node --check src/<file>.js` |
 | Health probe | `curl http://localhost:4000/health` |
 
 Default port `4000`. **Mailpit** (`http://localhost:8025`) captures all outgoing mail locally — use
-it instead of a real mailbox when verifying a send. There is no build step, transpiler, linter, or
+it instead of a real mailbox when verifying a send. **RedisInsight** (`http://localhost:5540`)
+browses the BullMQ keys under `bull:emailQueue:*`. There is no build step, transpiler, linter, or
 test runner. Do not introduce one without agreement; it changes the deployment contract.
 
 **Verify your own work before reporting completion.** There is no automated suite, so verification

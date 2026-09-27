@@ -15,10 +15,12 @@ and durable failure records.
 ```bash
 npm install
 cp .env.example .env      # fill in SMTP credentials
-npm run docker:up         # app + mongo + redis + mailpit, no real SMTP needed
+npm run docker:up         # app + mongo + redis + mailpit + redisinsight, no real SMTP needed
 ```
 
-Mailpit UI: http://localhost:8025. Native instead: `npm run dev`.
+Mailpit UI: http://localhost:8025. RedisInsight UI: http://localhost:5540 (pre-connected to the
+local `redis` service; inspect `bull:emailQueue:*` keys and run Redis commands). Native instead:
+`npm run dev`.
 
 ### Providers
 - **SMTP** (`EMAIL_PROVIDER=smtp`, default): requires `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`.
@@ -33,6 +35,7 @@ In `NODE_ENV=production`, `REDIS_URL` and `MONGODB_URI` are required too.
 | `GET /health` | Process state + a bounded Mongo/SMTP/Redis probe → `{"status":"ok", checks}` |
 | `POST /send` | `{"emails":["a@b.com",{"to":"c@d.com","subject":"Hi","html":"..."}]}` |
 | `GET /send/status/:jobId` | Queued job state and counts |
+| `GET /admin/queues` | BullMQ Dashboard UI (Bull Board) for queue metrics and job management |
 
 Errors are `{"ok": false, "error": "..."}`. See [API.md](API.md) for payloads and response shapes.
 

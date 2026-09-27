@@ -74,6 +74,25 @@ services:
     environment:
       MP_MAX_MESSAGES: 5000
 
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: email_sender_redisinsight
+    restart: unless-stopped
+    ports:
+      - "5540:5540" # Web UI port
+    environment:
+      RI_APP_HOST: 0.0.0.0
+      RI_LOG_LEVEL: ${REDISINSIGHT_LOG_LEVEL:-warn}
+      RI_REDIS_HOST: redis
+      RI_REDIS_PORT: "6379"
+      RI_REDIS_ALIAS: email-sender-redis
+    volumes:
+      - redisinsight_data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+
 volumes:
   mongo_data:
   redis_data:
+  redisinsight_data:

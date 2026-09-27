@@ -20,6 +20,10 @@ const start = async () => {
       emailProvider: config.email.provider === "resend" ? "resend (HTTPS)" : "smtp (pooled)",
       mongo: mongoReady ? "connected" : "unavailable (failed sends logged to file)",
       redis: config.redis.url ? "enabled" : "disabled (synchronous sends)",
+      // BullMQ Dashboard URL
+      dashboard: config.redis.url
+        ? `${config.bullBoard.basePath} (bull-board)`
+        : `${config.bullBoard.basePath} (queue disabled)`,
       resumePdf: foundPdf ? path.basename(foundPdf) : "none (dynamic fallback)",
       template: foundBody ? "loaded" : "default fallback",
       subject: foundSubject || "default fallback",
