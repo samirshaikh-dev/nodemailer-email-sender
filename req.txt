@@ -1,0 +1,330 @@
+Got it. Minimal scope:
+
+- One endpoint
+- Payload: array of emails
+- Backend tries to send each email via Nodemailer
+- If any fail, log the failure details in MongoDB
+- No auth, no extra features
+
+Below is a compact, production-style implementation you can use as a portfolio piece.
+
+***
+
+## Stack
+
+- Node.js + Express
+- TypeScript (can be JS if you prefer)
+- MongoDB (Mongoose)
+- Nodemailer (SMTP)
+
+***
+
+## Data model
+
+Only one collection needed: `failedEmails`.
+
+```ts
+// src/models/FailedEmail.ts
+import mongoose, { Document, Schema } from "mongoose";
+
+export interface IFailedEmail extends Document {
+  email: string;
+  subject?: string;
+  reason: string;
+  error?: string;
+  attemptedAt: Date;
+}
+
+const FailedEmailSchema = new Schema(
+  {
+    email: { type: String, required: true, index: true },
+    subject: String,
+    reason: { type: String, required: true }, // e.g. "smtp_error", "invalid_address"
+    error: String,
+    attemptedAt: { type: Date, default: Date.now },
+  },
+  { timestamps: true }
+);
+
+export const FailedEmail = mongoose.model<IFailedEmail>(
+  "FailedEmail",
+  FailedEmailSchema
+);
+```
+
+You can optionally store more fields (from, template, etc.), but this is enough.
+
+***
+
+## Nodemailer config
+
+```ts
+// src/config/mailer.ts
+import nodemailer from "nodemailer";
+
+export const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,        // e.g. "smtp.gmail.com"
+  port: Number(process.env.SMTP_PORT), // e.g. 587
+  secure: process.env.SMTP_SECURE === "true", // true for 465
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+```
+
+`.env` example:
+
+```env
+MONGODB_URI=mongodb://localhost:27017/email-sender
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your@gmail.com
+SMTP_PASS=your_app_password
+PORT=4000
+```
+
+***
+
+## Express app
+
+### `src/app.ts`
+
+```ts
+// src/app.ts
+import express, { Request, Response } from "express";
+import mongoose from "mongoose";
+import { transporter } from "./config/mailer";
+import { FailedEmail } from "./models/FailedEmail";
+
+const app = express();
+
+app.use(express.json());
+
+// Connect to MongoDB
+mongoose
+  .connect(process.env.MONGODB_URI!)
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+    process.exit(1);
+  });
+
+// Health check (optional but nice)
+app.get("/health", (_req: Request, res: Response) => {
+  res.json({ status: "ok" });
+});
+
+// Main endpoint
+app.post("/send", async (req: Request, res: Response) => {
+  const { emails } = req.body;
+
+  if (!Array.isArray(emails)) {
+    return res.status(400).json({
+      ok: false,
+      error: "Body must be an object with an 'emails' array.",
+    });
+  }
+
+  if (emails.length === 0) {
+    return res.status(400).json({
+      ok: false,
+      error: "'emails' array must not be empty.",
+    });
+  }
+
+  // Expected shape: either array of strings or array of objects
+  // Example: ["a@example.com", "b@example.com"]
+  // Or: [{ to: "a@example.com", subject: "Hi", html: "<b>Hi</b>" }]
+  const normalizedEmails: Array<{
+    to: string;
+    subject?: string;
+    html?: string;
+    text?: string;
+  }> = emails.map((e: any) => {
+    if (typeof e === "string") {
+      return { to: e };
+    }
+    if (typeof e === "object" && e.to) {
+      return {
+        to: String(e.to),
+        subject: e.subject ? String(e.subject) : undefined,
+        html: e.html ? String(e.html) : undefined,
+        text: e.text ? String(e.text) : undefined,
+      };
+    }
+    throw new Error("Invalid email entry");
+  });
+
+  const failed: Array<{
+    email: string;
+    subject?: string;
+    reason: string;
+    error?: string;
+  }> = [];
+
+  for (const entry of normalizedEmails) {
+    const { to, subject = "Hello", html = "<p>Hello</p>", text } = entry;
+
+    try {
+      await transporter.sendMail({
+        from: `"Email Sender" <${process.env.SMTP_USER}>`,
+        to,
+        subject,
+        html,
+        text,
+      });
+    } catch (err: any) {
+      const reason =
+        err?.code === "EAUTH"
+          ? "auth_failed"
+          : err?.code === "ENOTFOUND"
+          ? "dns_error"
+          : err?.message?.toLowerCase().includes("invalid address")
+          ? "invalid_address"
+          : "smtp_error";
+
+      failed.push({
+        email: to,
+        subject,
+        reason,
+        error: err?.message ?? String(err),
+      });
+    }
+  }
+
+  // Log failures in MongoDB
+  if (failed.length > 0) {
+    await FailedEmail.insertMany(
+      failed.map((f) => ({
+        email: f.email,
+        subject: f.subject,
+        reason: f.reason,
+        error: f.error,
+        attemptedAt: new Date(),
+      }))
+    );
+  }
+
+  res.json({
+    ok: true,
+    total: normalizedEmails.length,
+    sent: normalizedEmails.length - failed.length,
+    failed: failed.length,
+    failures: failed, // optional; you can remove this if you don’t want to expose details
+  });
+});
+
+export default app;
+```
+
+### `src/server.ts`
+
+```ts
+// src/server.ts
+import app from "./app";
+
+const PORT = Number(process.env.PORT) || 4000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+```
+
+***
+
+## Usage
+
+### Example 1: simple array of emails
+
+```bash
+curl -X POST http://localhost:4000/send \
+  -H "Content-Type: application/json" \
+  -d '{
+    "emails": [
+      "a@example.com",
+      "b@example.com",
+      "invalid-email"
+    ]
+  }'
+```
+
+Response:
+
+```json
+{
+  "ok": true,
+  "total": 3,
+  "sent": 2,
+  "failed": 1,
+  "failures": [
+    {
+      "email": "invalid-email",
+      "subject": "Hello",
+      "reason": "invalid_address",
+      "error": "Invalid address..."
+    }
+  ]
+}
+```
+
+The failed one is also stored in `failedEmails` collection.
+
+### Example 2: array of objects with custom subject/body
+
+```bash
+curl -X POST http://localhost:4000/send \
+  -H "Content-Type: application/json" \
+  -d '{
+    "emails": [
+      {
+        "to": "a@example.com",
+        "subject": "Welcome",
+        "html": "<h1>Welcome!</h1>"
+      },
+      {
+        "to": "bad@example.com",
+        "subject": "Test",
+        "html": "<p>Test</p>"
+      }
+    ]
+  }'
+```
+
+***
+
+## How this looks in a portfolio
+
+In your README / interview explanation:
+
+- “A minimal email-sending backend:
+  - Single POST `/send` endpoint
+  - Accepts an array of emails (strings or objects)
+  - Sends via Nodemailer + SMTP
+  - Logs all failed sends (with reason and error) into MongoDB
+  - No auth, no extra features; focused on reliability and clear error handling.”
+
+
+
+  Project: Minimal Email Sending Backend
+
+What is this project?
+This is a small backend service that sends emails to a list of recipients.
+You send a JSON payload with an array of email addresses, and the server
+tries to send an email to each address using Nodemailer and an SMTP server.
+
+Why are we creating it?
+The goal is to have a very simple, focused backend project that shows:
+- How to handle HTTP requests in Node.js + Express
+- How to send emails via SMTP using Nodemailer
+- How to log failed email sends into MongoDB for later inspection
+
+This project is intentionally minimal:
+- No authentication
+- No extra features like templates, users, or campaigns
+- No TypeScript, just plain JavaScript
+- Only one main endpoint: POST /send
+
+It is designed as a portfolio piece to demonstrate basic backend skills
+and reliable error handling without unnecessary complexity.

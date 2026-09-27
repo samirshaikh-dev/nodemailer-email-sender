@@ -1,0 +1,7 @@
+node_modules/
+.env
+npm-debug.log*
+.DS_Store
+
+# Runtime logs, including the failed-send fallback file
+logs/

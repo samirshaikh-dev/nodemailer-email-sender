@@ -1,0 +1,79 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: email_sender_app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4000}:4000"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - MONGODB_URI=mongodb://mongodb:27017/email-sender
+      - REDIS_URL=redis://redis:6379
+      - QUEUE_CONCURRENCY=${QUEUE_CONCURRENCY:-5}
+      - SMTP_HOST=${SMTP_HOST:-mailpit}
+      - SMTP_PORT=${SMTP_PORT:-1025}
+      - SMTP_SECURE=${SMTP_SECURE:-false}
+      - SMTP_USER=${SMTP_USER:-test@local.dev}
+      - SMTP_PASS=${SMTP_PASS:-testpass}
+      - SMTP_FROM=${SMTP_FROM:-Email Sender <test@local.dev>}
+      - SMTP_MAX_CONNECTIONS=${SMTP_MAX_CONNECTIONS:-5}
+      - SMTP_MAX_MESSAGES=${SMTP_MAX_MESSAGES:-100}
+      - AUTO_ATTACH_PDF=${AUTO_ATTACH_PDF:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  mongodb:
+    image: mongo:7.0
+    container_name: email_sender_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  redis:
+    image: redis:7-alpine
+    container_name: email_sender_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: email_sender_mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Webmail UI port
+    environment:
+      MP_MAX_MESSAGES: 5000
+
+volumes:
+  mongo_data:
+  redis_data:

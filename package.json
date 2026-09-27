@@ -1,0 +1,32 @@
+{
+  "name": "nodemailer-email-sender",
+  "version": "1.0.0",
+  "description": "Minimal email sending backend with Nodemailer and MongoDB failure logging",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f app"
+  },
+  "keywords": [
+    "nodemailer",
+    "express",
+    "mongodb",
+    "email-sender"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bullmq": "^6.3.9",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "ioredis": "^6.0.0",
+    "mongoose": "^8.9.5",
+    "nodemailer": "^6.10.0",
+    "pdfkit": "^0.20.2",
+    "winston": "^3.19.0"
+  }
+}
