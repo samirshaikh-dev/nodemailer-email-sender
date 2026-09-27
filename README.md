@@ -20,7 +20,10 @@ npm run docker:up         # app + mongo + redis + mailpit, no real SMTP needed
 
 Mailpit UI: http://localhost:8025. Native instead: `npm run dev`.
 
-`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` are required; the process exits at startup without them.
+### Providers
+- **SMTP** (`EMAIL_PROVIDER=smtp`, default): requires `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`.
+- **Resend** (`EMAIL_PROVIDER=resend`): requires `RESEND_API_KEY`. Recommended for hosts like Render Free Tier where SMTP ports (25, 465, 587) are blocked.
+
 In `NODE_ENV=production`, `REDIS_URL` and `MONGODB_URI` are required too.
 
 ## API

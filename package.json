@@ -28,6 +28,7 @@
     "mongoose": "8.9.5",
     "nodemailer": "6.10.0",
     "pdfkit": "0.20.2",
+    "resend": "^4.1.2",
     "winston": "3.19.0"
   }
 }

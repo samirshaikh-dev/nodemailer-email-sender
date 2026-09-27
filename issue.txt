@@ -1,0 +1,25 @@
+https://nodemailer-email-sender-d7cj.onrender.com/health
+
+{
+"status": "unavailable",
+"uptimeSeconds": 52.068,
+"timestamp": "2026-09-27T06:50:48.444Z",
+"checks": {
+"mongo": {
+"status": "unavailable",
+"required": true,
+"latencyMs": 0
+},
+"smtp": {
+"status": "unavailable",
+"required": true,
+"latencyMs": 5001,
+"cached": false
+},
+"redis": {
+"status": "disabled",
+"required": false,
+"latencyMs": 0
+}
+}
+}

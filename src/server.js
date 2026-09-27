@@ -17,6 +17,7 @@ const start = async () => {
 
   const server = app.listen(config.port, () => {
     logger.info(`Server listening on port ${config.port}`, {
+      emailProvider: config.email.provider === "resend" ? "resend (HTTPS)" : "smtp (pooled)",
       mongo: mongoReady ? "connected" : "unavailable (failed sends logged to file)",
       redis: config.redis.url ? "enabled" : "disabled (synchronous sends)",
       resumePdf: foundPdf ? path.basename(foundPdf) : "none (dynamic fallback)",
@@ -28,7 +29,7 @@ const start = async () => {
   const shutdown = (signal) => async () => {
     logger.info(`${signal} received, shutting down`);
     server.close();
-    transporter.close();
+    transporter?.close();
     await closeEmailWorker();
     await closeEmailQueue();
     await disconnectFromDatabase();

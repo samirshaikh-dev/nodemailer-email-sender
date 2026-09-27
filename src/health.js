@@ -1,5 +1,6 @@
 import { config } from "./config/env.js";
 import { transporter } from "./config/mailer.js";
+import { verifyResend } from "./config/resend.js";
 import { isDatabaseReady } from "./db.js";
 import { logger } from "./logger.js";
 import { isQueueReady } from "./queue/emailQueue.js";
@@ -8,12 +9,12 @@ const startedAt = Date.now();
 
 /**
  * Readiness polls arrive every few seconds from orchestrators. Re-authenticating against
- * SMTP on each one is wasteful and resembles a credential-probing pattern to providers, so
- * a completed SMTP probe is reused briefly. The Mongo and Redis checks read local
- * connection state and are never cached.
+ * providers on each one is wasteful and rate-limit prone, so completed probes are
+ * reused briefly. The Mongo and Redis checks read local connection state and are never cached.
  */
-const SMTP_PROBE_TTL_MS = 15000;
+const PROBE_TTL_MS = 15000;
 let smtpProbeCache = null;
+let resendProbeCache = null;
 
 /**
  * Releases the caller once `work` settles or `timeoutMs` elapses, whichever comes first.
@@ -42,8 +43,16 @@ const checkMongo = () => {
 };
 
 const checkSmtp = async () => {
+  if (config.email.provider !== "smtp") {
+    return { status: "disabled", required: false, latencyMs: 0 };
+  }
+
+  if (!transporter) {
+    return { status: "unavailable", required: true, latencyMs: 0 };
+  }
+
   const cached = smtpProbeCache;
-  if (cached && Date.now() - cached.at < SMTP_PROBE_TTL_MS) {
+  if (cached && Date.now() - cached.at < PROBE_TTL_MS) {
     return { ...cached.result, cached: true };
   }
 
@@ -63,6 +72,34 @@ const checkSmtp = async () => {
   return { ...result, cached: false };
 };
 
+const checkResend = async () => {
+  if (config.email.provider !== "resend") {
+    return { status: "disabled", required: false, latencyMs: 0 };
+  }
+
+  if (!config.resend.apiKey) {
+    return { status: "unavailable", required: true, latencyMs: 0 };
+  }
+
+  const cached = resendProbeCache;
+  if (cached && Date.now() - cached.at < PROBE_TTL_MS) {
+    return { ...cached.result, cached: true };
+  }
+
+  const started = Date.now();
+  let result;
+  try {
+    await verifyResend(config.health.probeTimeoutMs);
+    result = { status: "ok", required: true, latencyMs: Date.now() - started };
+  } catch (error) {
+    result = { status: "unavailable", required: true, latencyMs: Date.now() - started };
+    logger.warn("Resend readiness probe failed", { message: error.message });
+  }
+
+  resendProbeCache = { at: Date.now(), result };
+  return { ...result, cached: false };
+};
+
 const checkRedis = async () => {
   if (!config.redis.url) {
     return { status: "disabled", required: false, latencyMs: 0 };
@@ -78,8 +115,13 @@ const checkRedis = async () => {
  * still yields 200 — mirroring the optional-dependency contract rather than inverting it.
  */
 export const getReadiness = async () => {
-  const [mongo, smtp, redis] = await Promise.all([checkMongo(), checkSmtp(), checkRedis()]);
-  const checks = { mongo, smtp, redis };
+  const [mongo, smtp, resend, redis] = await Promise.all([
+    checkMongo(),
+    checkSmtp(),
+    checkResend(),
+    checkRedis(),
+  ]);
+  const checks = { mongo, smtp, resend, redis };
   const failing = Object.values(checks).some(
     (check) => check.required && check.status === "unavailable"
   );

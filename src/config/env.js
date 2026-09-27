@@ -23,15 +23,27 @@ const readRequired = (name) => {
   return value;
 };
 
+const provider = (
+  process.env.EMAIL_PROVIDER ||
+  (process.env.RESEND_API_KEY && !process.env.SMTP_HOST ? "resend" : "smtp")
+).toLowerCase();
+const isResend = provider === "resend";
+const isSmtp = !isResend;
+
+const resend = {
+  apiKey: isResend ? readRequired("RESEND_API_KEY") : (process.env.RESEND_API_KEY || null),
+  from: process.env.RESEND_FROM || process.env.SMTP_FROM || "onboarding@resend.dev",
+};
+
 const smtp = {
-  host: readRequired("SMTP_HOST"),
+  host: isSmtp ? readRequired("SMTP_HOST") : (process.env.SMTP_HOST || ""),
   port: readNumber(process.env.SMTP_PORT, 587),
   secure: readBoolean(process.env.SMTP_SECURE),
-  user: readRequired("SMTP_USER"),
-  pass: readRequired("SMTP_PASS"),
+  user: isSmtp ? readRequired("SMTP_USER") : (process.env.SMTP_USER || ""),
+  pass: isSmtp ? readRequired("SMTP_PASS") : (process.env.SMTP_PASS || ""),
   maxConnections: readNumber(process.env.SMTP_MAX_CONNECTIONS, 5),
   maxMessages: readNumber(process.env.SMTP_MAX_MESSAGES, 100),
-  from: process.env.SMTP_FROM || `"Email Sender" <${process.env.SMTP_USER}>`,
+  from: process.env.SMTP_FROM || (process.env.SMTP_USER ? `"Email Sender" <${process.env.SMTP_USER}>` : '"Email Sender" <onboarding@resend.dev>'),
 };
 
 const redis = {
@@ -77,6 +89,9 @@ if (isProduction) {
 }
 
 const email = {
+  provider,
+  isResend,
+  isSmtp,
   autoAttachPdf: readBoolean(process.env.AUTO_ATTACH_PDF, true),
 };
 
@@ -87,6 +102,7 @@ export const config = {
   isTest,
   port: readNumber(process.env.PORT, 4000),
   smtp,
+  resend,
   email,
   mongo: {
     uri: process.env.MONGODB_URI || null,
