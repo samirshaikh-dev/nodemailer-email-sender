@@ -4,7 +4,7 @@ I'm Samir Shaikh, a Full Stack Developer (React, Next.js, Node.js, PostgreSQL) o
 
 To hit the ground running with minimal onboarding, I’ve focused my internships on shipping production systems and solving real engineering bottlenecks:
 
-• **Multi-Product Backend & APIs (Logicwind):** Delivered across multiple production codebases — engineered new GraphQL/REST APIs, integrated 3rd-party services (Dittofeed, Loops), and cut live API latency by **~30%** with DataLoader and Redis caching.
+• **Multi-Product Backend & APIs (Logicwind):** Delivered across multiple production codebases - engineered new GraphQL/REST APIs, integrated 3rd-party services (Dittofeed, Loops), and cut live API latency by **~30%** with DataLoader and Redis caching.
 
 • **Solo End-to-End Delivery (Xira Infotech):** Rebuilt a static job portal into a dynamic production platform in **30 days** as the sole developer — authored the Node/Express REST API from scratch, designed PostgreSQL schemas, and implemented RBAC.
 
