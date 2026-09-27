@@ -1,34 +1,25 @@
 Hi Hiring Team,
 
-I'm Samir Shaikh, an early-career Full Stack Developer (2026 IT graduate) 
-open to Junior / Associate Full Stack roles (remote).
+I'm Samir Shaikh, a Full Stack Developer (React, Next.js, Node.js, PostgreSQL) open to Junior / Associate Full Stack roles (Remote).
 
-The biggest risk with hiring freshers is ramp-up time. To ensure I contribute 
-from week one without hand-holding, I’ve spent my internships shipping 
-production systems rather than tutorial projects:
+To hit the ground running with minimal onboarding, I’ve focused my internships on shipping production systems and solving real engineering bottlenecks:
 
-• Production Scale & Optimization (Logicwind): Cut GraphQL API latency by ~30% 
-for real users by resolving N+1 bottlenecks with DataLoader, migrating PostgreSQL 
-queries, and adding Redis caching.
+• **Production Optimization (Logicwind):** Reduced GraphQL API latency by **~30%** for real users by resolving N+1 resolver bottlenecks with DataLoader, optimizing PostgreSQL queries, and introducing Redis caching.
 
-• Solo End-to-End Delivery (Xira Infotech): Rebuilt a static job portal into a 
-dynamic production platform in 30 days — authored the Node/Express backend 
-from scratch, designed PostgreSQL schemas, and implemented RBAC.
+• **Solo End-to-End Delivery (Xira Infotech):** Rebuilt a static job portal into a dynamic production platform in **30 days** as the sole developer — authored the Node/Express REST API from scratch, designed PostgreSQL schemas, and implemented RBAC.
 
-• AI & Microservice Architecture (AI Ticket Platform): Built a 6+ microservice 
-backend with LLM-assisted ticket triage, Redis/BullMQ task queues, and Docker/Prometheus 
-observability.
+• **Distributed Architecture (AI Triage Platform):** Engineered a **6+ microservice backend** integrating LLM ticket classification, asynchronous Redis/BullMQ task queues, and Prometheus/Grafana observability.
 
-My resume is attached. You can review my live applications and code repositories here:
+My resume is attached, and you can inspect my live applications and source code here:
 
 • Portfolio: https://samir-portfolio-dev.vercel.app/
 • GitHub: https://github.com/samirshaikh-dev
 • LinkedIn: https://www.linkedin.com/in/samirshaikh-dev/
 
-Are you currently open to bringing on a hungry Junior / Associate Full Stack Engineer, or would you be open to reviewing my resume?
+Are you currently hiring for Junior or Associate Full Stack roles, or would you be open to a brief 10-minute chat this week?
 
 Best regards,
 Samir Shaikh
-Junior Full Stack Developer | Surat, India (Open to Remote)
+Full Stack Developer | Surat, India (Open to Remote)
 Phone: +91 8320927182
 Email: shaikh.samir.work@gmail.com

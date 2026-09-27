@@ -73,36 +73,122 @@ export const loadSubjectTemplate = () => {
  */
 const linkifyUrls = (text) => {
   const urlRegex = /(https?:\/\/[^\s<]+)/g;
-  return text.replace(
-    urlRegex,
-    '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline;">$1</a>'
-  );
+  return text.replace(urlRegex, (url) => {
+    const match = url.match(/^(.+?)([.,;:)]*)$/);
+    const cleanUrl = match ? match[1] : url;
+    const trailing = match ? match[2] : "";
+    return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; text-underline-offset: 2px;">${cleanUrl}</a>${trailing}`;
+  });
 };
 
 /**
- * Converts plain text into clean, formatted HTML paragraphs suitable for email clients.
+ * Escapes special HTML characters in plain text to prevent injection.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+const escapeHtml = (text) =>
+  text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+/**
+ * Converts markdown-style **bold** markers to inline-styled strong tags.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+const formatMarkdown = (text) =>
+  text.replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight: 600; color: #0f172a;">$1</strong>');
+
+/**
+ * Converts plain text into clean, formatted HTML paragraphs and lists suitable for email clients.
  *
  * @param {string} text
  * @returns {string}
  */
 export const textToHtml = (text) => {
-  if (!text) return "<p>Hello</p>";
+  const FONT_FAMILY =
+    "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const TEXT_COLOR = "#1e293b";
+
+  if (!text) {
+    return `<div style="max-width: 600px; margin: 0; padding: 4px 0; font-family: ${FONT_FAMILY}; font-size: 15px; line-height: 1.6; color: ${TEXT_COLOR};"><p style="margin: 0 0 14px 0;">Hello</p></div>`;
+  }
+
+  const isBulletLine = (line) => /^\s*[•\-\*]\s+/.test(line);
 
   const paragraphs = text
     .trim()
     .split(/\r?\n\r?\n+/)
     .map((para) => {
-      const formattedLines = linkifyUrls(
-        para
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
+      const rawLines = para.split(/\r?\n/);
+      const hasBullets = rawLines.some((line) => isBulletLine(line));
+
+      if (hasBullets) {
+        const sections = [];
+        let currentList = null;
+        let currentTextLines = [];
+
+        const flushText = () => {
+          if (currentTextLines.length > 0) {
+            const content = formatMarkdown(
+              linkifyUrls(escapeHtml(currentTextLines.join("\n")))
+            ).replace(/\n/g, "<br/>");
+
+            sections.push(
+              `<p style="margin: 0 0 8px 0; font-family: ${FONT_FAMILY}; font-size: 15px; line-height: 1.6; color: ${TEXT_COLOR};">${content}</p>`
+            );
+            currentTextLines = [];
+          }
+        };
+
+        const flushList = () => {
+          if (currentList && currentList.length > 0) {
+            const itemsHtml = currentList
+              .map((item, idx) => {
+                const isLast = idx === currentList.length - 1;
+                const itemContent = formatMarkdown(linkifyUrls(escapeHtml(item)));
+                return `<li style="margin: 0 0 ${isLast ? "2px" : "8px"} 0; line-height: 1.6; color: ${TEXT_COLOR};">${itemContent}</li>`;
+              })
+              .join("\n");
+
+            sections.push(
+              `<ul style="margin: 0 0 14px 0; padding-left: 20px; list-style-type: disc; font-family: ${FONT_FAMILY}; font-size: 15px; line-height: 1.6; color: ${TEXT_COLOR};">\n${itemsHtml}\n</ul>`
+            );
+            currentList = null;
+          }
+        };
+
+        for (const line of rawLines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          if (isBulletLine(trimmed)) {
+            flushText();
+            if (!currentList) currentList = [];
+            currentList.push(trimmed.replace(/^[•\-\*]\s+/, ""));
+          } else {
+            flushList();
+            currentTextLines.push(trimmed);
+          }
+        }
+
+        flushText();
+        flushList();
+
+        return sections.join("\n");
+      }
+
+      const formattedLines = formatMarkdown(
+        linkifyUrls(escapeHtml(para))
       ).replace(/\r?\n/g, "<br/>");
 
-      return `<p style="margin: 0 0 14px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #1e293b;">${formattedLines}</p>`;
+      return `<p style="margin: 0 0 14px 0; font-family: ${FONT_FAMILY}; font-size: 15px; line-height: 1.6; color: ${TEXT_COLOR};">${formattedLines}</p>`;
     });
 
-  return `<div style="max-width: 650px; margin: 0; padding: 10px 0;">${paragraphs.join("\n")}</div>`;
+  return `<div style="max-width: 600px; margin: 0; padding: 4px 0; font-family: ${FONT_FAMILY}; font-size: 15px; line-height: 1.6; color: ${TEXT_COLOR};">${paragraphs.join("\n")}</div>`;
 };
 
 /**
