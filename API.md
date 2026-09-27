@@ -17,13 +17,17 @@
   | :--- | :--- | :--- |
   | `Content-Type` | `application/json` | Required for all `POST` requests |
 
+  ## CORS
+
+  All origins are allowed (`Access-Control-Allow-Origin: *`), on every route including errors. Preflight `OPTIONS` returns `204`. Allowed methods: `GET,POST,OPTIONS`; allowed headers: `Content-Type,Authorization`.
+
   ---
 
   ## Table of Endpoints
 
   | Method | Endpoint | Description | Default Status |
   | :--- | :--- | :--- | :--- |
-  | `GET` | [`/health`](#1-get-health) | Liveness and health probe | `200 OK` |
+  | `GET` | [`/health`](#1-get-health) | Process state + dependency probe | `200 OK` / `503` |
   | `POST` | [`/send`](#2-post-send-async-queue-mode) | Dispatch bulk or single emails (async queue) | `202 Accepted` |
   | `POST` | [`/send?sync=true`](#3-post-sendsynctrue-synchronous-mode) | Send emails immediately inline (synchronous) | `200 OK` |
   | `GET` | [`/send/status/:jobId`](#4-get-sendstatusjobid) | Query background job state and results | `200 OK` / `404` |
@@ -32,7 +36,7 @@
 
   ## 1. `GET /health`
 
-  Checks if the web server process is alive and accepting incoming connections.
+  Confirms the process is alive **and** probes every configured dependency (MongoDB, SMTP, Redis). Returns `503` if a *required* dependency is unreachable, so it can double as an orchestrator readiness gate.
 
   ### Request
 
@@ -50,7 +54,40 @@
 
   ```json
   {
-    "status": "ok"
+    "status": "ok",
+    "uptimeSeconds": 412.53,
+    "timestamp": "2026-09-27T06:45:10.913Z",
+    "checks": {
+      "mongo": { "status": "ok", "required": true, "latencyMs": 0 },
+      "smtp": { "status": "ok", "required": true, "latencyMs": 1782, "cached": false },
+      "redis": { "status": "disabled", "required": false, "latencyMs": 0 }
+    }
+  }
+  ```
+
+  | Field | Meaning |
+  |---|---|
+  | `status` | `ok` (200) or `unavailable` (503) |
+  | `uptimeSeconds` | Seconds since process start |
+  | `checks.*.required` | `true` when the dependency is configured and therefore gates the status code |
+  | `checks.*.status` | `ok`, `unavailable`, or `disabled` (not configured — never fails the response) |
+  | `checks.smtp.cached` | `true` when the 15s SMTP probe cache was reused |
+
+  > [!NOTE]
+  > Probes are bounded by `HEALTH_PROBE_TIMEOUT_MS` (default `5000`), so a hung dependency cannot hold the request open. Probe error text is never returned — it goes to `logs/app.log` — because this endpoint is unauthenticated.
+
+  ### Response (`503 Service Unavailable`)
+
+  ```json
+  {
+    "status": "unavailable",
+    "uptimeSeconds": 412.53,
+    "timestamp": "2026-09-27T06:45:10.913Z",
+    "checks": {
+      "mongo": { "status": "unavailable", "required": true, "latencyMs": 0 },
+      "smtp": { "status": "ok", "required": true, "latencyMs": 1782, "cached": true },
+      "redis": { "status": "disabled", "required": false, "latencyMs": 0 }
+    }
   }
   ```
 

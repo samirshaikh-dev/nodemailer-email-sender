@@ -27,6 +27,7 @@ rate limiting per recipient domain.
 | Runtime | Node.js (ESM, `"type": "module"`) | v24.16.0 |
 | Package manager | npm | 11.13.0 |
 | HTTP | Express | 4.22.3 |
+| CORS | cors | 2.8.5 |
 | Mailing | Nodemailer (pooled SMTP) | 6.10.1 |
 | Database | MongoDB via Mongoose | 8.24.4 |
 | Task Queue | BullMQ + ioredis | 6.3.9 / 6.0.0 |
@@ -50,7 +51,7 @@ npm run dev              # node --watch src/server.js
 npm start                # node src/server.js
 ```
 
-Default port `4000`. Verify with `curl http://localhost:4000/health` → `{"status":"ok"}`.
+Default port `4000`. Verify with `curl http://localhost:4000/health` → `{"status":"ok", ...}`.
 
 ### Docker (App + MongoDB + Redis + Mailpit):
 ```bash
@@ -74,6 +75,7 @@ src/
 ├── app.js                 Express assembly: middleware + route mounting only
 ├── server.js              Process startup, DB/queue/worker lifecycle, graceful shutdown
 ├── db.js                  Mongoose connection lifecycle + readyState probe
+├── health.js              Bounded dependency probes backing GET /health
 ├── logger.js              Winston loggers: app log + failed-send fallback file
 ├── config/
 │   ├── env.js             Loads dotenv, validates env once, exports `config`
@@ -87,6 +89,7 @@ src/
 ├── failures/
 │   └── record.js          Records failed sends to MongoDB, falls back to file
 ├── middleware/
+│   ├── cors.js            Permissive CORS: all origins, preflight short-circuit
 │   └── errorHandler.js    JSON 404 + centralized error responses
 ├── models/
 │   └── FailedEmail.js     Mongoose schema for failure records
@@ -94,14 +97,15 @@ src/
 │   ├── emailQueue.js      BullMQ Queue with retries and exponential backoff
 │   └── emailWorker.js     Background worker dispatching queued batches
 └── routes/
-    ├── health.js          GET  /health
+    ├── health.js          GET  /health (liveness + dependency probe)
     └── send.js            POST /send, GET /send/status/:jobId
 ```
 
 | Module | Lines | Single responsibility |
 |---|---|---|
-| `email/send.js` | 75 | Dispatch in bounded batches, attach PDFs, classify failures |
 | `email/template.js` | 120 | Loads subject.txt and body.txt with live reload, linkifies URLs, formats HTML |
+| `health.js` | 88 | Bounded Mongo/SMTP/Redis dependency probes, uptime, aggregate status |
+| `email/send.js` | 75 | Dispatch in bounded batches, attach PDFs, classify failures |
 | `email/pdf.js` | 105 | Auto-detects repo PDF (Samir_Full_Stack_Developer_Resume.pdf) with caching & generator fallback |
 | `failures/record.js` | 67 | Persist failures to MongoDB, fall back to file |
 | `config/env.js` | 90 | Parse + validate `process.env` exactly once |
@@ -111,17 +115,18 @@ src/
 | `db.js` | 35 | Connect / disconnect / report connection readiness |
 | `queue/emailWorker.js` | 55 | Process queued batches, retry via BullMQ |
 | `routes/send.js` | 80 | Route queued vs. sync dispatch; job status lookup |
-| `queue/emailQueue.js` | 30 | Queue construction and retry/backoff policy |
+| `queue/emailQueue.js` | 52 | Queue construction, retry/backoff policy, bounded Redis readiness probe |
 | `config/redis.js` | 22 | Redis connection factory |
 | `middleware/errorHandler.js` | 28 | Map thrown errors to JSON HTTP responses |
+| `middleware/cors.js` | 14 | Permissive CORS, all origins, preflight short-circuit |
 | `config/mailer.js` | 15 | Construct the pooled SMTP transport |
-| `app.js` | 14 | Wire middleware and routers |
+| `app.js` | 16 | Wire middleware and routers |
 | `models/FailedEmail.js` | 14 | Schema definition |
-| `routes/health.js` | 7 | Liveness probe |
+| `routes/health.js` | 23 | GET /health — compose the dependency report into a status code |
 
-**Layering rule (top → bottom):** `server` → `app` → `routes` → `email`/`failures` → `db`/`models`
-→ `config`. Dependencies point downward only. Routes orchestrate; they contain no logic. Nothing
-below `routes` imports from `routes` or `app`.
+**Layering rule (top → bottom):** `server` → `app` → `routes` → `health`/`email`/`failures` →
+`db`/`models`/`queue` → `config`. Dependencies point downward only. Routes orchestrate; they
+contain no logic. Nothing below `routes` imports from `routes` or `app`.
 
 ---
 
@@ -132,6 +137,8 @@ batch is enqueued to BullMQ and the client gets `202` plus a `jobId`; the worker
 steps 3–4 out of band. Otherwise the work happens inline and the client gets `200` with the
 per-recipient breakdown. Steps 1, 2 and 5 are common to both.
 
+0. `corsMiddleware` runs first, before the body parser. A preflight `OPTIONS` short-circuits with
+   `204`; every other response, including errors, carries the CORS headers.
 1. `express.json()` parses the body. Malformed JSON short-circuits to the error middleware.
 2. `sendRouter` calls `normalizeRecipients(req.body?.emails)`. Any shape violation throws a
    `ValidationError` carrying `status = 400`.
@@ -174,6 +181,7 @@ All environment access is confined to `src/config/env.js`. No other file reads `
 | `MONGO_TIMEOUT_MS` | no | `5000` | Positive integer; bounds the startup connect attempt |
 | `REDIS_URL` | **yes in prod** | `null` | Required in `production`; optional in `development` (unset ⇒ synchronous sends) |
 | `QUEUE_CONCURRENCY` | no | `5` | Positive integer; BullMQ worker concurrency |
+| `HEALTH_PROBE_TIMEOUT_MS` | no | `5000` | Positive integer; bounds each dependency round trip inside `GET /health` |
 | `LOG_LEVEL` | no | `info` | One of `error/warn/info/http/verbose/debug/silly` |
 | `LOG_DIR` | no | `logs` | Log directory, relative to the working directory |
 | `PORT` | no | `4000` | Positive integer |
@@ -199,13 +207,58 @@ Parsing helpers and environment safeguards in `config/env.js`:
 
 ### `GET /health`
 
+One endpoint, two answers. It confirms the process is alive **and** reports whether every
+configured dependency is reachable, so a caller never needs a second route.
+
 ```json
-{ "status": "ok" }
+{
+  "status": "ok",
+  "uptimeSeconds": 412.53,
+  "timestamp": "2026-09-27T06:45:10.913Z",
+  "checks": {
+    "mongo": { "status": "ok", "required": true, "latencyMs": 0 },
+    "smtp":  { "status": "ok", "required": true, "latencyMs": 1782, "cached": false },
+    "redis": { "status": "disabled", "required": false, "latencyMs": 0 }
+  }
+}
 ```
 
-Always `200` while the process is up. It does **not** probe MongoDB or SMTP — it is a liveness
-probe, not a readiness probe. Add a separate readiness route if orchestrator gating on dependencies
-is ever needed.
+`status` is `"ok"` with HTTP `200`, or `"unavailable"` with HTTP `503` when any **required**
+check is `unavailable`. `status: "ok"` remains the success value, so a client that only
+asserts on that field is unaffected by the added fields.
+
+**Required means configured, not present.** `mongo` is `required: false` when `MONGODB_URI`
+is unset and `redis` is `required: false` when `REDIS_URL` is unset, because the service is
+designed to run without them (§5, §9a). An unconfigured dependency reports `"disabled"` and
+never causes a `503`. In production both are mandatory by config, so all three gate.
+
+Per-check `status` is `"ok"`, `"unavailable"`, or `"disabled"`. `latencyMs` is the probe round
+trip; `cached: true` on `smtp` means the 15s result cache was reused — see §7a.
+
+Probe error text is **not** returned. A provider rejection can name the rejected account, and
+this endpoint is unauthenticated with a wildcard CORS policy (§7 CORS), so the detail goes to
+`logs/app.log` via `logger.warn` and the response carries only the status.
+
+### 7a. Health Probe Behaviour
+
+- **Bounded.** Every network probe races against `HEALTH_PROBE_TIMEOUT_MS`, so a hung SMTP
+  server or dead Redis cannot hold the request open. Verified: with `HEALTH_PROBE_TIMEOUT_MS=2000`
+  and both Mongo and Redis pointed at closed ports, the request completed in 2.01s → `503`.
+  Timers are `unref()`d so a pending probe never delays shutdown.
+- **SMTP is verified, not inferred.** `transporter.verify()` performs a real SMTP auth, so it
+  catches a revoked password that a socket check would miss. Results are cached for 15s
+  (`SMTP_PROBE_TTL_MS` in `src/health.js`) because orchestrators poll every few seconds and
+  repeated auth attempts resemble credential probing to providers. `cached: true` marks a
+  reused result. Mongo and Redis read local connection state and are never cached.
+- **Probes are parallel.** `Promise.all` over the three checks, so response time is the
+  slowest probe, not their sum.
+- **`503` depends on dependencies, not just the process.** An orchestrator using this as a
+  readiness gate will pull the instance out of rotation when Mongo or SMTP is down — that is
+  the intent, but it also means this endpoint should not double as a container *liveness*
+  gate, or a healthy process gets restarted during a dependency outage.
+- **Redis is probed through BullMQ** via `isQueueReady()` in `queue/emailQueue.js`, which
+  bounds `emailQueue.waitUntilReady()`. It returns `false` rather than throwing; a probe must
+  never be able to fail the health request.
 
 ### `POST /send`
 
@@ -236,6 +289,26 @@ Success — `200`, returned even when every send fails:
 ```
 
 All errors share the shape `{ "ok": false, "error": "<message>" }`.
+
+### CORS
+
+`corsMiddleware` in `middleware/cors.js` is mounted in `app.js` **before** `express.json()` and
+applies to every route, including 404s and errors.
+
+| Header (request / response) | Value |
+|---|---|
+| `Access-Control-Allow-Origin` (res) | `*` |
+| `Access-Control-Allow-Methods` (res) | `GET,POST,OPTIONS` |
+| `Access-Control-Allow-Headers` (res) | `Content-Type,Authorization` |
+| `Access-Control-Max-Age` (res) | `86400` (24 h) |
+
+`OPTIONS` preflights return `204 No Content` with an empty body.
+
+**No credentials.** The policy is a literal wildcard, and the Fetch spec forbids pairing `*` with
+`Access-Control-Allow-Credentials`. If cookie or `Authorization`-header auth is ever added, the
+wildcard must be replaced with an origin allowlist (the `cors` package takes an array of origins and
+then permits credentials) — at that point move the list into `config/env.js` rather than hardcoding
+it. The service is currently unauthenticated, so no browser client needs credentials.
 
 ---
 
@@ -399,6 +472,37 @@ Added to streamline local development and ensure production safety:
 - **Environment awareness:** Added `NODE_ENV` handling in `config/env.js`.
 - **Production fail-fast safeguards:** In `NODE_ENV=production`, `config/env.js` strictly requires `REDIS_URL` and `MONGODB_URI`, immediately throwing on boot if missing to guarantee reliability in production.
 
+### Phase 5 — CORS
+
+Added so browser and React Native clients can call the API cross-origin without a proxy:
+
+- **`cors@2.8.5`** installed, wrapped in `middleware/cors.js` as a single preconfigured export.
+- **Wildcard policy, deliberately.** Every origin is allowed, matching the service's
+  unauthenticated, stateless nature. No configuration surface was added, so the policy cannot
+  drift between environments.
+- **Mounted first in `app.js`**, ahead of `express.json()`, so a preflight `OPTIONS` is answered
+  with `204` before the body parser runs and so error responses also carry CORS headers.
+- **No credentials support.** `origin: "*"` cannot legally be paired with
+  `Access-Control-Allow-Credentials`; see §7 for the change required if auth is ever introduced.
+
+### Phase 6 — Dependency Health Probe
+
+Closes the §12 gap where `GET /health` could not gate traffic on dependency state:
+
+- **New `src/health.js`** (88 lines) holding three bounded probes plus the aggregate report, and
+  `routes/health.js` reduced to composing that report into a status code. Layering preserved:
+  `routes` → `health` → `db`/`queue`/`config`.
+- **One endpoint, not two.** `GET /health` still returns `{"status":"ok"}` plus new
+  `uptimeSeconds`, `timestamp`, and `checks`. A separate `/health/ready` route was built and
+  then deliberately collapsed into this one, so callers need a single URL for both questions.
+- **Behavior change:** the endpoint can now return **`503`** when a required dependency is
+  unreachable, where it previously always returned `200`. `status: "ok"` is unchanged, so
+  clients asserting only on that field are unaffected.
+- **`isQueueReady(timeoutMs)`** added to `queue/emailQueue.js`, mirroring `isDatabaseReady()`
+  in `db.js`. Both return a status instead of throwing, so a probe can never fail the request.
+- **New `HEALTH_PROBE_TIMEOUT_MS`** (default 5000) bounds every network round trip; a hung
+  dependency cannot hold the request open.
+
 ---
 
 ## 11. Extending This Codebase
@@ -414,6 +518,9 @@ Added to streamline local development and ensure production safety:
   `sendOne()` in `email/send.js`. Both are intentionally small extension points.
 - **New log destination** → add a transport in `logger.js`. If the failure sink gains a new
   fallback, update the table in §9a and the README together.
+- **Tightening CORS** → edit the single options object in `middleware/cors.js`. If it becomes
+  environment-dependent, the origin list belongs in `config/env.js`; do not read `process.env`
+  from the middleware.
 
 ---
 
@@ -431,21 +538,39 @@ Added to streamline local development and ensure production safety:
 - **No deduplication** of repeated addresses within one request.
 - **No replay of `logs/failed-emails.log` into MongoDB.** When Mongo is down, records live only
   in the file; nothing reads that file back. This is the main outstanding gap in the fallback.
+- **No distinction between liveness and readiness.** A single `GET /health` answers both, so
+  there is no dependency-free endpoint for a container *liveness* gate during an outage. See
+  §7a; the split was deliberately not made.
 
 ---
 
 ## 13. Verification Status
 
-Verified by booting the server and exercising each branch. All 16 modules pass `node --check`,
+Verified by booting the server and exercising each branch. All 18 modules pass `node --check`,
 and the server starts with empty stderr.
 
 **API contract** (against the live MongoDB at `mongodb://localhost:27017/email-sender`):
 
-- `GET /health` → `200 {"status":"ok"}`.
+- `GET /health` → `200` with `status: "ok"`, all three checks reported, live SMTP auth
+  (`latencyMs ≈ 1800`), second call within 15s served from cache with `cached: true`.
 - All eight malformed-input cases → `400` with the original error strings intact.
 - `GET /unknown` → `404` JSON; malformed JSON → `400 {"ok":false,"error":"Malformed JSON body."}`.
+- `OPTIONS /send` and `OPTIONS /health` → `204` with all four CORS headers; CORS headers also
+  present on the `404` and `400` responses above.
 - A live two-recipient send against `smtp.gmail.com` returned `200` with both recipients correctly
   classified `auth_failed`, in request order.
+
+**Health probe** — one boot per scenario, asserting status code and body:
+
+| Scenario | Result |
+|---|---|
+| Mongo + Redis up, SMTP authenticates | `200`, `mongo`/`smtp` `ok`, `redis` `disabled` (no `REDIS_URL`) |
+| `MONGODB_URI` + `REDIS_URL` at closed ports, `HEALTH_PROBE_TIMEOUT_MS=2000` | `503` in 2.01s; `redis` `latencyMs: 2002` — bounded, not hung |
+| Neither `MONGODB_URI` nor `REDIS_URL` set | `200`, both `required: false, status: "disabled"` |
+| `GET /health/ready` | `404` — the two-route split was collapsed, only `/health` exists |
+
+No probe error text reached any response body; the SMTP rejection detail went to
+`logs/app.log` only.
 
 **Failure sink resolution** — one send per scenario, asserting where the record landed:
 

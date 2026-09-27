@@ -20,13 +20,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bullmq": "^6.3.9",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "ioredis": "^6.0.0",
-    "mongoose": "^8.9.5",
-    "nodemailer": "^6.10.0",
-    "pdfkit": "^0.20.2",
-    "winston": "^3.19.0"
+    "bullmq": "6.3.9",
+    "cors": "2.8.5",
+    "dotenv": "16.4.7",
+    "express": "4.21.2",
+    "ioredis": "6.0.0",
+    "mongoose": "8.9.5",
+    "nodemailer": "6.10.0",
+    "pdfkit": "0.20.2",
+    "winston": "3.19.0"
   }
 }

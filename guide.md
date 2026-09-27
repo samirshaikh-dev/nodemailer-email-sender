@@ -72,7 +72,7 @@ graph TD
 
 | Method | Endpoint | Description | Expected Status | Response Summary |
 |---|---|---|---|---|
-| `GET` | `/health` | Server liveness probe | `200 OK` | `{"status": "ok"}` |
+| `GET` | `/health` | Process state + dependency probe | `200 OK` / `503` | `{"status": "ok", "uptimeSeconds": 412.5, "checks": {"mongo": {...}, "smtp": {...}, "redis": {...}}}` |
 | `POST` | `/send` | Asynchronous queue dispatch (BullMQ) | `202 Accepted` | `{"ok": true, "jobId": "1", "total": 5, "statusUrl": "/send/status/1"}` |
 | `POST` | `/send?sync=true` | Synchronous immediate dispatch | `200 OK` | `{"ok": true, "total": 2, "sent": 1, "failed": 1, "failures": [...]}` |
 | `GET` | `/send/status/:jobId` | Query BullMQ background job state | `200 OK` / `404` / `503` | `{"ok": true, "state": "completed", "result": {...}}` |
@@ -362,13 +362,18 @@ import axios from "axios";
 import { createApiClient } from "./client";
 
 /**
- * Checks backend liveness via GET /health
+ * Checks backend health via GET /health.
+ * Returns true only when the process is up AND every configured dependency is reachable.
+ * The endpoint can take up to HEALTH_PROBE_TIMEOUT_MS (5000ms default) on a slow SMTP
+ * auth, so the client timeout must sit above that.
  */
 export const checkServerHealth = async (baseUrl) => {
   try {
-    const res = await axios.get(`${baseUrl}/health`, { timeout: 4000 });
+    const res = await axios.get(`${baseUrl}/health`, { timeout: 8000 });
     return res.data?.status === "ok";
   } catch {
+    // A 503 lands here too. Inspect the body to tell "process down" from
+    // "dependency down": res.response?.data?.checks
     return false;
   }
 };
@@ -1158,7 +1163,7 @@ export const parseAndValidateRecipients = (rawText) => {
 - **`202 Accepted`**: Received when queued in BullMQ. Store `response.data.jobId` in local storage or navigation params.
 - **`400 Bad Request`**: Malformed JSON or empty `emails` array. Display `error.response.data.error`.
 - **`404 Not Found`**: Invalid job ID or unknown route.
-- **`503 Service Unavailable`**: BullMQ/Redis not running on server when polling `/send/status/:jobId`.
+- **`503 Service Unavailable`**: BullMQ/Redis not running on server when polling `/send/status/:jobId`. Also returned by `GET /health` when a *required* dependency is down — read `response.data.checks` to see which one.
 
 ---
 
@@ -1176,7 +1181,11 @@ export const parseAndValidateRecipients = (rawText) => {
 - **Cause:** BullMQ background queue is only active when `REDIS_URL` is set in the backend's `.env`.
 - **Solution:** Ensure Redis container is running (`docker compose up -d redis`) or run `POST /send?sync=true` if Redis is unconfigured.
 
-### Issue 4: Email sent but not showing in recipient inbox
+### Issue 4: Health check reports the server as "offline" while it is clearly up
+- **Cause:** `GET /health` probes Mongo, SMTP and Redis, and returns `503` if any *configured* one is unreachable. An expired Gmail app password or a stopped Mongo container is enough to trip it.
+- **Solution:** Inspect `response.data.checks` for the failing entry, then read `logs/app.log` — probe errors are logged, never returned in the response body.
+
+### Issue 5: Email sent but not showing in recipient inbox
 - **Cause:** When developing locally with Docker, all mail is routed to **Mailpit** to protect against real spam delivery.
 - **Solution:** Navigate to `http://localhost:8025` (or `http://<LAN_IP>:8025` on mobile) to view the message and verify the PDF attachment.
 

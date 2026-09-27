@@ -39,6 +39,12 @@ const redis = {
   concurrency: readNumber(process.env.QUEUE_CONCURRENCY, 5),
 };
 
+// Bounds each network round trip made by the readiness probe so an unresponsive dependency
+// cannot hold an HTTP request open. Mirrors the MONGO_TIMEOUT_MS rationale.
+const health = {
+  probeTimeoutMs: readNumber(process.env.HEALTH_PROBE_TIMEOUT_MS, 5000),
+};
+
 // Relative to the process working directory, which is the project root under npm scripts.
 // The failure log is the last-resort record of undelivered mail, so it is written to disk
 // and never to the database it is standing in for.
@@ -89,5 +95,6 @@ export const config = {
     timeoutMs: readNumber(process.env.MONGO_TIMEOUT_MS, 5000),
   },
   redis,
+  health,
   logs,
 };

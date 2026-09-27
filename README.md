@@ -5,6 +5,7 @@ and durable failure records.
 
 - **Queue**: BullMQ + Redis — `POST /send` returns `202` + `jobId`. Omit `REDIS_URL` or pass
   `?sync=true` to send inline and get `200` with per-recipient results.
+  the API directly. Preflights are answered with `204`.
 - **Failures**: stored in MongoDB `failedemails`, falling back to `logs/failed-emails.log`.
 - **Templates/attachments**: subject and body default to `data/subject.txt` and `data/body.txt`
   (live reload); a PDF in `data/` is attached automatically.
@@ -26,7 +27,7 @@ In `NODE_ENV=production`, `REDIS_URL` and `MONGODB_URI` are required too.
 
 | Route | Purpose |
 |---|---|
-| `GET /health` | Liveness → `{"status":"ok"}` |
+| `GET /health` | Process state + a bounded Mongo/SMTP/Redis probe → `{"status":"ok", checks}` |
 | `POST /send` | `{"emails":["a@b.com",{"to":"c@d.com","subject":"Hi","html":"..."}]}` |
 | `GET /send/status/:jobId` | Queued job state and counts |
 

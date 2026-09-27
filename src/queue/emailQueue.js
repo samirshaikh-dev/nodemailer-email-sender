@@ -28,3 +28,28 @@ export const closeEmailQueue = async () => {
     await emailQueue.close();
   }
 };
+
+/**
+ * Bounded readiness probe for Redis, mirroring `isDatabaseReady()` in db.js.
+ * BullMQ reconnects on its own, so an already-connected queue resolves immediately; the
+ * timeout only bounds the first connection attempt. Returns false rather than throwing —
+ * a probe must never be able to fail the health request.
+ */
+export const isQueueReady = async (timeoutMs) => {
+  if (!emailQueue) return false;
+  let timer;
+  try {
+    await Promise.race([
+      emailQueue.waitUntilReady(),
+      new Promise((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error("Redis did not become ready in time")), timeoutMs);
+        timer.unref?.();
+      }),
+    ]);
+    return true;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+};
