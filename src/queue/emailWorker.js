@@ -12,11 +12,16 @@ export const emailWorker = connection
       "emailQueue",
       async (job) => {
         const { recipients } = job.data;
-        logger.info(`Processing job ${job.id} with ${recipients.length} recipients`);
+        const jobStart = Date.now();
+        logger.info(`Processing job ${job.id} with ${recipients.length} recipients`, {
+          jobId: job.id,
+          recipientCount: recipients.length,
+        });
 
         const failures = await sendRecipients(recipients);
         await recordFailures(failures);
 
+        const durationMs = Date.now() - jobStart;
         const result = {
           total: recipients.length,
           sent: recipients.length - failures.length,
@@ -24,7 +29,14 @@ export const emailWorker = connection
           failures,
         };
 
-        logger.info(`Completed job ${job.id}: ${result.sent} sent, ${result.failed} failed`);
+        logger.info(`Completed job ${job.id}: ${result.sent} sent, ${result.failed} failed`, {
+          jobId: job.id,
+          durationMs,
+          total: result.total,
+          sent: result.sent,
+          failed: result.failed,
+          status: failures.length === 0 ? "completed" : "completed_with_errors",
+        });
         return result;
       },
       {
@@ -36,15 +48,29 @@ export const emailWorker = connection
 
 if (emailWorker) {
   emailWorker.on("completed", (job) => {
-    logger.info(`Job ${job.id} marked as completed`);
+    logger.info(`Job ${job.id} marked as completed`, {
+      jobId: job.id,
+      status: "completed",
+    });
   });
 
   emailWorker.on("failed", (job, error) => {
-    logger.error(`Job ${job?.id} failed: ${error.message}`);
+    logger.error(`Job ${job?.id} failed: ${error.message}`, {
+      jobId: job?.id,
+      code: error?.code,
+      message: error?.message,
+      stack: error?.stack,
+      status: "failed",
+    });
   });
 
   emailWorker.on("error", (error) => {
-    logger.error(`Worker error: ${error.message}`);
+    logger.error(`Worker error: ${error.message}`, {
+      code: error?.code,
+      message: error?.message,
+      stack: error?.stack,
+      status: "failed",
+    });
   });
 }
 

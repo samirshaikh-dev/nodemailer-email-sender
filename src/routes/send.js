@@ -2,6 +2,7 @@ import { Router } from "express";
 import { normalizeRecipients } from "../email/normalize.js";
 import { sendRecipients } from "../email/send.js";
 import { recordFailures } from "../failures/record.js";
+import { logger } from "../logger.js";
 import { emailQueue } from "../queue/emailQueue.js";
 
 export const sendRouter = Router();
@@ -10,12 +11,27 @@ export const sendRouter = Router();
 sendRouter.post("/", async (req, res, next) => {
   try {
     const recipients = normalizeRecipients(req.body?.emails);
+    logger.info("Recipient payload validated successfully", {
+      requestId: req.id,
+      recipientCount: recipients.length,
+      status: "completed",
+    });
 
     // If BullMQ is available and sync mode isn't explicitly requested, queue the job
     const runAsync = Boolean(emailQueue) && req.query.sync !== "true";
 
     if (runAsync) {
+      const queueStart = Date.now();
       const job = await emailQueue.add("send-bulk-emails", { recipients });
+      const latencyMs = Date.now() - queueStart;
+
+      logger.info(`Email batch queued for background processing`, {
+        requestId: req.id,
+        jobId: job.id,
+        recipientCount: recipients.length,
+        latencyMs,
+        status: "completed",
+      });
 
       return res.status(202).json({
         ok: true,
@@ -27,6 +43,11 @@ sendRouter.post("/", async (req, res, next) => {
     }
 
     // Synchronous execution fallback (or when ?sync=true)
+    logger.info("Processing email batch synchronously", {
+      requestId: req.id,
+      recipientCount: recipients.length,
+    });
+
     const failures = await sendRecipients(recipients);
     await recordFailures(failures);
 

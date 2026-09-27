@@ -1,20 +1,103 @@
 import winston from "winston";
 import { config } from "./config/env.js";
 
+const SENSITIVE_KEYS = new Set([
+  "password",
+  "pass",
+  "secret",
+  "token",
+  "apikey",
+  "api_key",
+  "authorization",
+  "auth",
+  "cookie",
+  "smtp_pass",
+  "resend_api_key",
+]);
+
+const maskString = (str) => {
+  if (typeof str !== "string") return str;
+  let masked = str
+    .replace(/(mongodb(?:\+srv)?:\/\/[^:]+:)([^@]+)(@)/gi, "$1***$3")
+    .replace(/(redis:\/\/[^:]+:)([^@]+)(@)/gi, "$1***$3")
+    .replace(/Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, "Bearer [REDACTED]")
+    .replace(/re_[A-Za-z0-9_]{10,}/gi, "re_[REDACTED]");
+
+  if (config.logs.maskEmails) {
+    masked = masked.replace(
+      /\b([a-zA-Z0-9_.+-])[a-zA-Z0-9_.+-]*@([a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)\b/g,
+      "$1***@$2"
+    );
+  }
+  return masked;
+};
+
+const redactInPlace = (target, seen = new WeakSet()) => {
+  if (target === null || typeof target !== "object") return;
+  if (seen.has(target)) return;
+  seen.add(target);
+
+  if (Array.isArray(target)) {
+    for (let i = 0; i < target.length; i++) {
+      if (typeof target[i] === "string") {
+        target[i] = maskString(target[i]);
+      } else if (typeof target[i] === "object" && target[i] !== null) {
+        redactInPlace(target[i], seen);
+      }
+    }
+    return;
+  }
+
+  for (const [key, value] of Object.entries(target)) {
+    if (SENSITIVE_KEYS.has(key.toLowerCase())) {
+      target[key] = "[REDACTED]";
+    } else if (typeof value === "string") {
+      target[key] = maskString(value);
+    } else if (typeof value === "object" && value !== null) {
+      redactInPlace(value, seen);
+    }
+  }
+};
+
+const redactFormat = winston.format((info) => {
+  redactInPlace(info);
+  return info;
+});
+
+const standardFieldsFormat = winston.format((info) => {
+  info.service = config.serviceName || "email-sender";
+  info.environment = config.env;
+  info.pid = process.pid;
+  info.context = {
+    service: info.service,
+    environment: info.environment,
+    pid: info.pid,
+  };
+  return info;
+});
+
 const jsonFormat = winston.format.combine(
+  winston.format.timestamp(),
   winston.format.errors({ stack: true }),
+  standardFieldsFormat(),
+  redactFormat(),
   winston.format.json()
 );
 
-const consoleFormat = winston.format.combine(
-  winston.format.colorize(),
-  winston.format.errors({ stack: true }),
-  winston.format.timestamp(),
-  winston.format.printf(({ level, message, timestamp, ...rest }) => {
-    const extras = Object.keys(rest).length > 0 ? ` ${JSON.stringify(rest)}` : "";
-    return `${timestamp} ${level}: ${message}${extras}`;
-  })
-);
+const consoleFormat =
+  config.logs.format === "text" || config.logs.format === "pretty"
+    ? winston.format.combine(
+        winston.format.colorize(),
+        winston.format.errors({ stack: true }),
+        winston.format.timestamp(),
+        standardFieldsFormat(),
+        redactFormat(),
+        winston.format.printf(({ level, message, timestamp, service, environment, pid, context, ...rest }) => {
+          const extras = Object.keys(rest).length > 0 ? ` ${JSON.stringify(rest)}` : "";
+          return `${timestamp} [${service}/${environment}] ${level}: ${message}${extras}`;
+        })
+      )
+    : jsonFormat;
 
 const rotate = { maxsize: 5 * 1024 * 1024, maxFiles: 5, tailable: true };
 

@@ -377,14 +377,36 @@ The file sink is diagnostic and short-term; real durability requires `MONGODB_UR
 
 ---
 
-## 9b. Logging
+## 9b. Logging & Observability
 
 `src/logger.js` exports two Winston loggers:
 
 | Export | Destination | Format | Rotation |
 |---|---|---|---|
-| `logger` | console + `logs/app.log` | console: human-readable, file: JSON | 5 MB × 5 |
-| `failureLogger` | `logs/failed-emails.log` | JSONL | 10 MB × 5 |
+| `logger` | console + `logs/app.log` | Single-line JSON (`LOG_FORMAT=json` default, `text` fallback) | 5 MB × 5 |
+| `failureLogger` | `logs/failed-emails.log` | Single-line JSONL | 10 MB × 5 |
+
+### Standard Log Fields
+Every log entry emitted by `logger` contains the following structured fields:
+- `timestamp`: ISO-8601 string.
+- `level`: Log level (`debug`, `info`, `warn`, `error`).
+- `message`: Description of the event.
+- `service`: Configured service name (`SERVICE_NAME` or `email-sender`).
+- `environment`: Runtime environment (`development`, `production`, `test`).
+- `pid`: Process identifier (`process.pid`).
+- `context`: Container object containing `{ service, environment, pid }`.
+
+### Sensitive Data Redaction
+A recursive redaction format scrubs sensitive fields before any log write:
+- Redacts keys matching: `password`, `pass`, `token`, `secret`, `apiKey`, `authorization`, `cookie`, `smtp_pass`, `resend_api_key`.
+- Scrubs embedded credentials from MongoDB (`mongodb://***@...`) and Redis connection strings.
+- Masks Bearer tokens and Resend API keys.
+- Supports optional recipient email address masking when `MASK_EMAILS=true`.
+
+### Request & External Call Tracing
+- **HTTP Requests**: Handled by `src/middleware/requestLogger.js` with `requestId` generation/propagation (`X-Request-Id`), route path, recipient count, response code, and total `durationMs`.
+- **External Calls**: Tracks outbound network and dependency latency (`latencyMs`) and `status` (`completed` or `failed`) for MongoDB connections, Resend/SMTP email deliveries, and BullMQ queue jobs.
+- **Errors**: Logs capture structured error codes (`code`), error messages, and full stack traces (`stack`).
 
 `console.*` is banned outside `logger.js`; verify with a grep for `console\.` under `src/`.
 

@@ -65,6 +65,8 @@ const logDir = process.env.LOG_DIR || "logs";
 const logs = {
   dir: logDir,
   level: LOG_LEVELS.has(process.env.LOG_LEVEL) ? process.env.LOG_LEVEL : "info",
+  format: (process.env.LOG_FORMAT || "json").toLowerCase(),
+  maskEmails: readBoolean(process.env.MASK_EMAILS, false),
   appFile: path.join(logDir, "app.log"),
   failureFile: path.join(logDir, "failed-emails.log"),
 };
@@ -96,6 +98,7 @@ const email = {
 };
 
 export const config = {
+  serviceName: process.env.SERVICE_NAME || "email-sender",
   env: nodeEnv,
   isProduction,
   isDevelopment,

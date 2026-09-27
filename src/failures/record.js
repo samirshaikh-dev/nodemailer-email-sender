@@ -32,14 +32,29 @@ const toLogEntries = (failures) => {
 
 const recordToFile = async (failures, reason) => {
   warnAboutFallback(reason);
+  const start = Date.now();
 
   try {
     for (const entry of toLogEntries(failures)) {
       await writeFailureLog(entry);
     }
-    logger.info(`Recorded ${failures.length} failed send(s) to ${config.logs.failureFile}`);
+    const durationMs = Date.now() - start;
+    logger.info(`Recorded ${failures.length} failed send(s) to ${config.logs.failureFile}`, {
+      count: failures.length,
+      file: config.logs.failureFile,
+      durationMs,
+      status: "completed",
+    });
   } catch (error) {
-    logger.error(`Failed to write failure log: ${error.message}`, { file: config.logs.failureFile });
+    const durationMs = Date.now() - start;
+    logger.error(`Failed to write failure log: ${error.message}`, {
+      count: failures.length,
+      file: config.logs.failureFile,
+      durationMs,
+      code: error?.code,
+      stack: error?.stack,
+      status: "failed",
+    });
   }
 };
 
@@ -59,8 +74,15 @@ export const recordFailures = async (failures) => {
     return recordToFile(failures, "MongoDB is not connected");
   }
 
+  const start = Date.now();
   try {
     await FailedEmail.insertMany(toDocuments(failures));
+    const latencyMs = Date.now() - start;
+    logger.info(`Persisted ${failures.length} failed email records to MongoDB`, {
+      count: failures.length,
+      latencyMs,
+      status: "completed",
+    });
   } catch (error) {
     return recordToFile(failures, `MongoDB insert failed: ${error.message}`);
   }

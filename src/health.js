@@ -65,7 +65,13 @@ const checkSmtp = async () => {
     result = { status: "unavailable", required: true, latencyMs: Date.now() - started };
     // The provider's reply can name the rejected account, so it is logged rather than
     // returned: /health is unauthenticated and served to every origin.
-    logger.warn("SMTP readiness probe failed", { message: error.message });
+    logger.warn("SMTP readiness probe failed", {
+      latencyMs: Date.now() - started,
+      code: error.code,
+      message: error.message,
+      stack: error.stack,
+      status: "failed",
+    });
   }
 
   smtpProbeCache = { at: Date.now(), result };
@@ -93,7 +99,13 @@ const checkResend = async () => {
     result = { status: "ok", required: true, latencyMs: Date.now() - started };
   } catch (error) {
     result = { status: "unavailable", required: true, latencyMs: Date.now() - started };
-    logger.warn("Resend readiness probe failed", { message: error.message });
+    logger.warn("Resend readiness probe failed", {
+      latencyMs: Date.now() - started,
+      code: error.code,
+      message: error.message,
+      stack: error.stack,
+      status: "failed",
+    });
   }
 
   resendProbeCache = { at: Date.now(), result };
@@ -106,7 +118,14 @@ const checkRedis = async () => {
   }
   const started = Date.now();
   const ready = await isQueueReady(config.health.probeTimeoutMs);
-  return { status: ready ? "ok" : "unavailable", required: true, latencyMs: Date.now() - started };
+  const latencyMs = Date.now() - started;
+  if (!ready) {
+    logger.warn("Redis readiness probe failed", {
+      latencyMs,
+      status: "failed",
+    });
+  }
+  return { status: ready ? "ok" : "unavailable", required: true, latencyMs };
 };
 
 /**

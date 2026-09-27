@@ -43,6 +43,10 @@ const start = async () => {
 };
 
 start().catch((error) => {
-  logger.error(`Failed to start: ${error.message}`, { stack: error.stack });
+  logger.error(`Failed to start: ${error.message}`, {
+    code: error.code,
+    stack: error.stack,
+    status: "failed",
+  });
   process.exit(1);
 });

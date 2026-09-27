@@ -1,6 +1,7 @@
 import { config } from "../config/env.js";
 import { transporter } from "../config/mailer.js";
 import { sendResendEmail } from "../config/resend.js";
+import { logger } from "../logger.js";
 import { getAutoPdfAttachment } from "./pdf.js";
 import { resolveEmailContent } from "./template.js";
 
@@ -31,6 +32,7 @@ const sendOne = async (entry) => {
   } = entry;
 
   const { subject, text, html } = resolveEmailContent(entry);
+  const providerStart = Date.now();
 
   try {
     const emailAttachments = [...attachments];
@@ -69,12 +71,37 @@ const sendOne = async (entry) => {
         attachments: emailAttachments.length > 0 ? emailAttachments : undefined,
       });
     }
+
+    const latencyMs = Date.now() - providerStart;
+    logger.debug(`Email delivered via ${config.email.provider}`, {
+      provider: config.email.provider,
+      to,
+      subject,
+      latencyMs,
+      status: "completed",
+    });
+
     return null;
   } catch (error) {
+    const latencyMs = Date.now() - providerStart;
+    const reason = classifyError(error);
+
+    logger.warn(`Failed to dispatch email via ${config.email.provider}`, {
+      provider: config.email.provider,
+      to,
+      subject,
+      latencyMs,
+      reason,
+      code: error?.code,
+      message: error?.message ?? String(error),
+      stack: error?.stack,
+      status: "failed",
+    });
+
     return {
       email: to,
       subject,
-      reason: classifyError(error),
+      reason,
       error: error?.message ?? String(error),
     };
   }
@@ -85,6 +112,7 @@ export const sendRecipients = async (recipients) => {
   const batchSize =
     config.email.provider === "resend" ? 5 : config.smtp.maxConnections;
   const outcomes = new Array(recipients.length);
+  const batchStart = Date.now();
 
   for (let start = 0; start < recipients.length; start += batchSize) {
     const batch = recipients.slice(start, start + batchSize);
@@ -96,5 +124,16 @@ export const sendRecipients = async (recipients) => {
     });
   }
 
-  return outcomes.filter(Boolean);
+  const failures = outcomes.filter(Boolean);
+  const durationMs = Date.now() - batchStart;
+
+  logger.info("Batch email delivery completed", {
+    total: recipients.length,
+    sent: recipients.length - failures.length,
+    failed: failures.length,
+    durationMs,
+    status: failures.length === 0 ? "completed" : failures.length === recipients.length ? "failed" : "completed_with_errors",
+  });
+
+  return failures;
 };

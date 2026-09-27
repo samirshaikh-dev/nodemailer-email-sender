@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { logger } from "../logger.js";
 
 const TEMPLATE_FILENAME = "body.txt";
 const SUBJECT_FILENAME = "subject.txt";
@@ -59,7 +60,7 @@ export const loadSubjectTemplate = () => {
 
     return cachedSubject.subject;
   } catch (error) {
-    console.error(`[template] Failed to read ${SUBJECT_FILENAME}:`, error.message);
+    logger.error(`[template] Failed to read ${SUBJECT_FILENAME}: ${error.message}`);
     return null;
   }
 };
@@ -143,7 +144,7 @@ export const loadBodyTemplate = () => {
 
     return cachedTemplate;
   } catch (error) {
-    console.error(`[template] Failed to read ${TEMPLATE_FILENAME}:`, error.message);
+    logger.error(`[template] Failed to read ${TEMPLATE_FILENAME}: ${error.message}`);
     return null;
   }
 };
