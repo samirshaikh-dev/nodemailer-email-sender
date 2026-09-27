@@ -65,6 +65,12 @@ Mailpit Web UI: `http://localhost:8025` captures all outgoing mail safely for in
 ## 4. Architecture
 
 ```
+data/
+├── Samir_Shaikh_FullStack_Developer.pdf   Resume PDF automatically attached to emails
+├── body.txt                              Default email cover letter template (live reload)
+├── subject.txt                           Default email subject line (live reload)
+└── req.txt                               Project requirements and scope document
+
 src/
 ├── app.js                 Express assembly: middleware + route mounting only
 ├── server.js              Process startup, DB/queue/worker lifecycle, graceful shutdown
@@ -77,7 +83,8 @@ src/
 ├── email/
 │   ├── normalize.js       Request payload validation + normalization
 │   ├── pdf.js             Dynamic PDF attachment generation (pdfkit)
-│   └── send.js            Batching, dispatch, SMTP error classification
+│   ├── send.js            Batching, dispatch, SMTP error classification
+│   └── template.js        Loads body.txt, URL linkification, HTML formatting
 ├── failures/
 │   └── record.js          Records failed sends to MongoDB, falls back to file
 ├── middleware/
@@ -95,7 +102,8 @@ src/
 | Module | Lines | Single responsibility |
 |---|---|---|
 | `email/send.js` | 75 | Dispatch in bounded batches, attach PDFs, classify failures |
-| `email/pdf.js` | 95 | Dynamic PDF document generator (styled A4 with pdfkit) |
+| `email/template.js` | 120 | Loads subject.txt and body.txt with live reload, linkifies URLs, formats HTML |
+| `email/pdf.js` | 105 | Auto-detects repo PDF (Samir_Full_Stack_Developer_Resume.pdf) with caching & generator fallback |
 | `failures/record.js` | 67 | Persist failures to MongoDB, fall back to file |
 | `config/env.js` | 90 | Parse + validate `process.env` exactly once |
 | `logger.js` | 65 | Winston app logger + durable failure-log writes |

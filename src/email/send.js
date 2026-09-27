@@ -1,9 +1,7 @@
 import { config } from "../config/env.js";
 import { transporter } from "../config/mailer.js";
-import { generateEmailPdf } from "./pdf.js";
-
-const DEFAULT_SUBJECT = "Hello";
-const DEFAULT_HTML = "<p>Hello</p>";
+import { getAutoPdfAttachment } from "./pdf.js";
+import { resolveEmailContent } from "./template.js";
 
 export const classifyError = (error) => {
   if (error?.code === "EAUTH") return "auth_failed";
@@ -18,20 +16,19 @@ export const classifyError = (error) => {
 const sendOne = async (entry) => {
   const {
     to,
-    subject = DEFAULT_SUBJECT,
-    html = DEFAULT_HTML,
-    text,
     attachPdf,
     pdfTitle,
     pdfContent,
     attachments = [],
   } = entry;
 
+  const { subject, text, html } = resolveEmailContent(entry);
+
   try {
     const emailAttachments = [...attachments];
 
     if (attachPdf) {
-      const pdfBuffer = await generateEmailPdf({
+      const pdfAttachment = await getAutoPdfAttachment({
         to,
         subject,
         html,
@@ -40,17 +37,7 @@ const sendOne = async (entry) => {
         pdfContent,
       });
 
-      const safeFilename = (subject || "document")
-        .toLowerCase()
-        .replace(/[^a-z0-9_-]/g, "_")
-        .replace(/_+/g, "_")
-        .substring(0, 40);
-
-      emailAttachments.push({
-        filename: `${safeFilename || "document"}.pdf`,
-        content: pdfBuffer,
-        contentType: "application/pdf",
-      });
+      emailAttachments.push(pdfAttachment);
     }
 
     await transporter.sendMail({

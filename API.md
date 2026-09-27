@@ -68,7 +68,16 @@
 
   ### Request Payloads
 
-  #### Option A: Simple Array of Email Strings
+  > [!TIP]
+  > **Zero-Payload Workflow with `data/subject.txt` & `data/body.txt`:**
+  > Whenever `subject`, `html`, and `text` are omitted (as in Option A below), the server automatically populates:
+  > - **Subject line:** Loaded from [`data/subject.txt`](data/subject.txt) with live reload.
+  > - **Email message:** Loaded from [`data/body.txt`](data/body.txt) with live reload & clickable links.
+  > - **Attachment:** Automatically attaches [`data/Samir_Shaikh_FullStack_Developer.pdf`](data/Samir_Shaikh_FullStack_Developer.pdf).
+  > 
+  > You only need to edit `data/subject.txt` and `data/body.txt` in your editor to change the subject and cover letter for every email you send — no server restart required!
+
+  #### Option A: Simple Array of Email Strings (Uses data/subject.txt + data/body.txt + Resume PDF)
   ```json
   {
     "emails": [
@@ -112,22 +121,20 @@
   }
   ```
 
-  #### Option D: PDF Attachment Customization
-  By default, a styled delivery record PDF is **automatically generated and attached** to each email. You can customize the title/content or disable it:
+  #### Option D: Automatic Resume PDF Attachment
+  By default, any PDF in the project repository is **automatically detected, loaded, and attached** to each email with the filename **`Samir_Full_Stack_Developer_Resume.pdf`**:
   ```json
   {
     "emails": [
       {
-        "to": "client@example.com",
-        "subject": "Invoice #1042",
-        "html": "<p>Please find your invoice attached.</p>",
-        "attachPdf": true,
-        "pdfTitle": "OFFICIAL INVOICE #1042",
-        "pdfContent": "Services rendered: Web Development & API Integration.\nAmount Due: $1,250.00\nDue Date: October 15, 2026."
+        "to": "hiring.manager@techcompany.com",
+        "subject": "Full Stack Developer Application — Samir Shaikh",
+        "html": "<p>Dear Hiring Team,</p><p>Please find attached my resume for your consideration.</p>",
+        "attachPdf": true
       },
       {
         "to": "no-attachment@example.com",
-        "subject": "Quick Ping",
+        "subject": "Quick Note",
         "text": "Hello, no PDF needed here.",
         "attachPdf": false
       }

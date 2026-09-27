@@ -7,7 +7,8 @@ A lightweight, production-ready backend service designed to send bulk or individ
 - **Asynchronous Task Queue (BullMQ + Redis)**: Offloads large email batches to background workers, immediately returning `202 Accepted` to prevent HTTP request timeouts.
 - **Connection Pooling & Concurrency**: Nodemailer SMTP transport reuses pooled connections with controlled batch concurrency.
 - **Flexible Payload**: Accepts recipient lists as plain email strings or customized objects (with specific subject, html, or text).
-- **Automatic PDF Generation & Attachment**: Generates and attaches a professional delivery record PDF (`pdfkit`) to every outgoing email on the fly, with support for per-recipient custom titles and content.
+- **Automatic Resume PDF Attachment**: Automatically detects any PDF file in the repository (prioritizing `Samir_Full_Stack_Developer_Resume.pdf`) and attaches it to outgoing emails with the filename **`Samir_Full_Stack_Developer_Resume.pdf`**, using in-memory caching for zero-overhead bulk sending.
+- **Quick Subject & Message Editing via `subject.txt` & `body.txt`**: When `subject`, `html`, or `text` is omitted in the request, the server automatically loads the subject from `subject.txt` and the body from `body.txt` with live reloads, linkifies URLs, and formats clean HTML paragraphs.
 - **Automated Failure Logging**: Errors during delivery (SMTP authentication, invalid recipient address, DNS issues, network errors) are caught, classified, and stored in MongoDB under the `failedemails` collection.
 - **File Fallback for Failures**: If MongoDB is unconfigured, unreachable, or the insert fails, failed sends are written to `logs/failed-emails.log` (JSONL) instead — records are never silently dropped.
 - **Structured Logging**: Winston logger writing human-readable output to the console and JSON to `logs/app.log`.
@@ -33,6 +34,12 @@ A lightweight, production-ready backend service designed to send bulk or individ
 ## Project Structure
 
 ```
+data/
+├── Samir_Shaikh_FullStack_Developer.pdf   Resume PDF automatically attached to emails
+├── body.txt                              Default email cover letter template (live reload)
+├── subject.txt                           Default email subject line (live reload)
+└── req.txt                               Project requirements and scope document
+
 src/
 ├── app.js                 Express app assembly (middleware + routes)
 ├── server.js              Process startup, DB/Queue/Worker lifecycle, graceful shutdown
@@ -44,7 +51,9 @@ src/
 │   └── redis.js           Redis connection factory (supports TLS/Upstash/Render)
 ├── email/
 │   ├── normalize.js       Request payload validation + normalization
-│   └── send.js            Batching, dispatch, SMTP error classification
+│   ├── pdf.js             Auto-discovers data/ resume PDF & fallback PDF generator
+│   ├── send.js            Batching, dispatch, SMTP error classification
+│   └── template.js        Loads & live-reloads body.txt & subject.txt from data/
 ├── failures/
 │   └── record.js          Persists failed sends to MongoDB, falls back to file
 ├── middleware/

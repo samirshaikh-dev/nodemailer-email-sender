@@ -1,4 +1,147 @@
+import fs from "node:fs";
+import path from "node:path";
 import PDFDocument from "pdfkit";
+
+export const DEFAULT_PDF_NAME = "Samir_Shaikh_FullStack_Developer.pdf";
+export const TARGET_PDF_NAME = DEFAULT_PDF_NAME;
+
+let cachedPdf = null;
+
+const ensureDataDir = (rootDir) => {
+  const dataDir = path.join(rootDir, "data");
+  if (!fs.existsSync(dataDir)) {
+    try {
+      fs.mkdirSync(dataDir, { recursive: true });
+    } catch (_) {}
+  }
+  return dataDir;
+};
+
+/**
+ * Searches the 'data' directory (and project root) for any PDF file,
+ * prioritizing data/ folder and automatically moving root PDFs into data/.
+ *
+ * @returns {string|null} Absolute path to the discovered PDF file, or null
+ */
+export const findRepoPdf = () => {
+  const rootDir = process.cwd();
+  const dataDir = ensureDataDir(rootDir);
+
+  // 1. Check data directory for Samir_Shaikh_FullStack_Developer.pdf
+  const primaryDataPath = path.join(dataDir, DEFAULT_PDF_NAME);
+  if (fs.existsSync(primaryDataPath)) {
+    return primaryDataPath;
+  }
+
+  const legacyDataPath = path.join(dataDir, "Samir_Full_Stack_Developer_Resume.pdf");
+  if (fs.existsSync(legacyDataPath)) {
+    return legacyDataPath;
+  }
+
+  // 2. Check if a candidate PDF exists in root, and automatically move it into data/
+  const candidateRootFiles = [
+    DEFAULT_PDF_NAME,
+    "Samir_Full_Stack_Developer_Resume.pdf",
+  ];
+
+  for (const candidate of candidateRootFiles) {
+    const rootPath = path.join(rootDir, candidate);
+    if (fs.existsSync(rootPath)) {
+      const destPath = path.join(dataDir, candidate);
+      try {
+        fs.renameSync(rootPath, destPath);
+        return destPath;
+      } catch (err) {
+        try {
+          fs.copyFileSync(rootPath, destPath);
+          fs.unlinkSync(rootPath);
+          return destPath;
+        } catch (_) {
+          return rootPath;
+        }
+      }
+    }
+  }
+
+  // 3. Scan 'data' directory for any other .pdf file
+  try {
+    const dataFiles = fs.readdirSync(dataDir);
+    const pdfFile = dataFiles.find(
+      (file) => file.toLowerCase().endsWith(".pdf") && !file.startsWith(".")
+    );
+    if (pdfFile) {
+      return path.join(dataDir, pdfFile);
+    }
+  } catch (_) {}
+
+  // 4. Scan root directory for any available .pdf file and move to data/
+  try {
+    const rootFiles = fs.readdirSync(rootDir);
+    const pdfFile = rootFiles.find(
+      (file) => file.toLowerCase().endsWith(".pdf") && !file.startsWith(".")
+    );
+    if (pdfFile) {
+      const src = path.join(rootDir, pdfFile);
+      const dest = path.join(dataDir, pdfFile);
+      try {
+        fs.renameSync(src, dest);
+        return dest;
+      } catch (_) {
+        return src;
+      }
+    }
+  } catch (_) {}
+
+  // 5. Custom path from env if configured
+  if (process.env.RESUME_PDF_PATH && fs.existsSync(process.env.RESUME_PDF_PATH)) {
+    return process.env.RESUME_PDF_PATH;
+  }
+
+  return null;
+};
+
+/**
+ * Retrieves the PDF attachment for outgoing emails.
+ * Automatically picks up the PDF from data/ (or project root)
+ * with in-memory caching, or falls back to dynamic generation.
+ *
+ * @param {Object} entry - Recipient entry details
+ * @returns {Promise<{ filename: string, content: Buffer, contentType: string }>}
+ */
+export const getAutoPdfAttachment = async (entry = {}) => {
+  const pdfPath = findRepoPdf();
+
+  if (pdfPath) {
+    try {
+      const stat = fs.statSync(pdfPath);
+      if (!cachedPdf || cachedPdf.mtime !== stat.mtimeMs || cachedPdf.path !== pdfPath) {
+        cachedPdf = {
+          path: pdfPath,
+          content: fs.readFileSync(pdfPath),
+          mtime: stat.mtimeMs,
+        };
+      }
+
+      const filename = path.basename(pdfPath);
+
+      return {
+        filename,
+        content: cachedPdf.content,
+        contentType: "application/pdf",
+      };
+    } catch (err) {
+      // If reading the file fails, fall through to dynamic generation
+    }
+  }
+
+  // Fallback: Generate dynamically if no physical PDF exists in repo
+  const generatedBuffer = await generateEmailPdf(entry);
+  return {
+    filename: DEFAULT_PDF_NAME,
+    content: generatedBuffer,
+    contentType: "application/pdf",
+  };
+};
 
 const stripHtml = (html) => {
   if (!html) return "";
