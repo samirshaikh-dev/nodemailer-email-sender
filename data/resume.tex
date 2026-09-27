@@ -1,0 +1,189 @@
+  \documentclass[10pt]{article}
+
+  %-------------------------
+  % Page setup
+  %-------------------------
+  \usepackage[a4paper,top=0.25in,bottom=0.25in,left=0.42in,right=0.42in]{geometry}
+
+  %-------------------------
+  % Packages
+  %-------------------------
+  \usepackage[hidelinks]{hyperref}
+  \usepackage{enumitem}
+  \usepackage{titlesec}
+  \usepackage{textcomp}
+  \usepackage[T1]{fontenc}
+
+  %-------------------------
+  % Global formatting
+  %-------------------------
+  \setlength{\parindent}{0pt}
+  \setlist[itemize]{leftmargin=*, noitemsep, topsep=0pt, parsep=0pt, partopsep=0pt}
+  \pagestyle{empty}
+
+  %-------------------------
+  % Section formatting
+  %-------------------------
+  \titleformat{\section}{\bfseries\scshape\large}{}{0pt}{}[\titlerule]
+  \titlespacing*{\section}{0pt}{4pt}{2pt}
+
+  %-------------------------
+  % Custom commands
+  %-------------------------
+  \newcommand{\resumeSubHeadingListStart}{\begin{itemize}[label={}, leftmargin=0pt]}
+  \newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+
+  \newcommand{\resumeSubheading}[4]{
+    \item
+    \textbf{#1} \hfill #2 \\
+    \textit{#3} \hfill \textit{#4}
+  }
+
+  % #1 = Project Name, #2 = Date, #3 = Tech Stack, #4 = GitHub link, #5 = Full Details link
+  \newcommand{\resumeProjectHeading}[5]{
+    \item
+    \textbf{\href{#4}{#1}} \hfill \href{#5}{\small Full Details} \\
+    \textit{#3} \hfill \textit{#2}
+  }
+
+  \newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.17in, nosep, topsep=1pt]}
+  \newcommand{\resumeItemListEnd}{\end{itemize}\vspace{1pt}}
+
+
+%-------------------------
+% Document
+%-------------------------
+\begin{document}
+
+%-------------------------
+% Header
+%-------------------------
+\begin{center}
+  {\Huge \scshape Samir Shaikh} \\ \vspace{1pt}
+  {\large Full Stack Developer} \\ \vspace{1pt}
+  Surat, Gujarat, India | Open to Remote \\ \vspace{1pt}
+  \small
+  \href{tel:+918320927182}{+91 8320927182} \quad
+  \href{mailto:shaikh.samir.work@gmail.com}{shaikh.samir.work@gmail.com} \quad
+  \href{https://www.linkedin.com/in/samirshaikh-dev/}{linkedin.com/in/samirshaikh-dev} \quad
+  \href{https://github.com/samirshaikh-dev}{github.com/samirshaikh-dev} \quad
+  \href{https://samir-portfolio-dev.vercel.app/}{Portfolio}
+\end{center}
+
+%-------------------------
+% Summary
+%-------------------------
+\section{Summary}
+\textbf{Full Stack Developer} with production experience building resilient web applications using \textbf{React, Next.js, Node.js, and TypeScript}, backed by \textbf{PostgreSQL, MongoDB, and Redis}. Proven track record owning features end-to-end --- from relational schema design and granular \textbf{RBAC} to production \textbf{GraphQL microservices} and low-latency REST APIs. Experienced in database query optimization (\textbf{\textasciitilde{}30\% latency reduction}), third-party integrations, and delivering in Agile sprint cycles.
+
+  %-------------------------
+  % Experience
+  %-------------------------
+  \section{Experience}
+  \resumeSubHeadingListStart
+
+  \resumeSubheading
+  {Full Stack Developer Intern}{Aug 2026 -- Sep 2026}
+  {Xira Infotech}{Vapi}
+  \resumeItemListStart
+  \item Rebuilt an existing static job portal into a fully dynamic platform solo in one month, taking it from hardcoded data to a production-ready system end-to-end.
+  \item Designed a PostgreSQL schema to replace static data, and built the Node.js/Express REST API from scratch to serve it.
+  \item Converted the existing Next.js frontend from static to fully dynamic, wiring it to the new API for job listings, search, and applications.
+  \item Built role-based access control (RBAC) and admin dashboards from scratch, and integrated a payment gateway to move the platform from demo to production-ready.
+  \item Utilized AI-assisted development workflows to accelerate architecture planning, feature implementation, and debugging across the application stack.
+  \resumeItemListEnd
+
+  \resumeSubheading
+  {Backend Developer Intern}{Sep 2025 -- May 2026}
+  {Logicwind}{Surat}
+  \resumeItemListStart
+  \item Architected and developed scalable server-side Node.js microservices driven by production GraphQL APIs (Apollo Server), authoring schema definitions, custom resolvers, and event-driven data pipelines.
+  \item Reduced GraphQL API response times by \textasciitilde{}30\% for real users by executing PostgreSQL schema and query migrations, eliminating resolver bottlenecks with DataLoader, and implementing Redis caching layers.
+  \item Integrated third-party APIs including Dittofeed, Reoon Email Verifier, and Loops into GraphQL mutation workflows to automate transactional email and contact validation pipelines.
+  \item Leveraged AI tooling to accelerate schema generation, resolver boilerplate scaffolding, and unit test drafting.
+  \item Partnered with QA and frontend teams in Agile sprint cycles to diagnose production issues, resolve edge-case bugs, and maintain technical documentation.
+  \resumeItemListEnd
+
+  \resumeSubHeadingListEnd
+  
+  %-------------------------
+  % Projects
+  %-------------------------
+  \section{Projects}
+  \resumeSubHeadingListStart
+
+  %-------------------------
+  % Projects 1
+  %-------------------------
+  \resumeProjectHeading
+  {AI Customer Ticket - Support Automation Platform}{}
+  {Node.js, TypeScript, Express.js, Next.js, React.js, GraphQL, PostgreSQL, Sequelize, Redis, BullMQ, Docker, Docker Compose, Prometheus, Grafana}
+  {https://github.com/samirshaikh-dev/ai-ticket-triage-platform}
+  {https://samir-portfolio-dev.vercel.app/projects/ai-customer-ticket-triage}
+  \resumeItemListStart
+  \item Architected a 6+ Express.js microservice backend integrating LLM-based classification via API, leveraging AI-assisted development (AI IDEs, OpenCode/Kilocode) to rapidly iterate on the classification and scoring pipeline.
+  \item Built a high-performance dual-frontend dashboard using Next.js and React with Context API-driven state management, implementing HTTP Long Polling for sub-second real-time ticket synchronization, SLA monitoring, and dynamic AI scoring.
+  \item Deployed a comprehensive DevOps and observability stack using Docker Compose, Prometheus, and Grafana to establish reliable distributed tracing and metric visualization across all microservices.
+  \resumeItemListEnd
+
+  %-------------------------
+  % Projects 2
+  %-------------------------
+  \resumeProjectHeading
+  {Sahara Tyre -- WhatsApp Campaigner}{}
+  {Node.js, Express, React Native, Expo, TypeScript, Google Sheets API, WhatsApp Web API, GitHub Actions, Render}
+  {https://github.com/samirshaikh-dev/sahara-tyre-whatsapp-campaigner}
+  {https://samir-portfolio-dev.vercel.app/projects/whatsapp-campaigner}
+  \resumeItemListStart
+  \item Architected a high-throughput WhatsApp marketing platform with a React Native (Expo) mobile client consuming Node.js/Express.js REST APIs, automating personalized bulk messaging campaigns and streamlining business workflows for end-users.
+  \item Engineered a highly concurrent Google Sheets-backed API featuring rate-limited batch processing, optimizing message delivery and ensuring strict third-party API compliance.
+  \item Implemented robust \texttt{whatsapp-web.js} session management with continuous state synchronization via Socket.io, and automated zero-downtime deployments using GitHub Actions and Render.
+  \resumeItemListEnd
+
+  %-------------------------
+  % Projects 3
+  %-------------------------
+  \resumeProjectHeading
+  {Eventify -- Full-Stack Event Management Platform}{}
+  {Node.js, Express.js, TypeScript, React, MongoDB, GraphQL (Apollo), Mongoose, Tailwind CSS, shadcn/ui, JWT, Nodemailer, Framer Motion}
+  {https://github.com/samirshaikh-dev/eventify}
+  {https://samir-portfolio-dev.vercel.app/projects/eventify}
+  \resumeItemListStart
+  \item Developed a comprehensive full-stack event management platform using React, Vite, Tailwind CSS, and shadcn/ui, delivering a fully responsive, cross-browser-tested interface with seamless CRUD operations and automated email invitations.
+  \item Designed and implemented robust data models in MongoDB using Mongoose, powering a scalable REST/GraphQL API architecture with optimized connection pooling, rate limiting, and secure CORS configuration.
+  \item Engineered a secure authentication pipeline featuring strict Role-Based Access Control (RBAC), JWT session management, bcrypt password hashing, SHA-256 OTP verification, and end-to-end Zod payload validation.
+  \resumeItemListEnd
+
+  \resumeSubHeadingListEnd
+
+%-------------------------
+% Technical Skills
+%-------------------------
+\section{Technical Skills}
+\begin{itemize}[leftmargin=0.15in, label={}, noitemsep]
+\item \textbf{Languages}: JavaScript (ES6+), TypeScript, SQL
+\item \textbf{Frontend}: React.js, Next.js, Redux Toolkit, Context API, Tailwind CSS, shadcn/ui, HTML5, CSS3
+\item \textbf{Backend \& APIs}: Node.js, Express.js, GraphQL (Apollo Server/Client), REST APIs, Socket.io, JWT, Webhooks, Prisma ORM, Sequelize ORM
+\item \textbf{Databases \& Caching}: PostgreSQL, MongoDB, Redis, Firebase (Firestore, Auth)
+\item \textbf{DevOps \& Architecture}: Docker, Docker Compose, BullMQ, Prometheus, Grafana, GitHub Actions (CI/CD), Git, Postman
+\item \textbf{Core Concepts \& AI Tools}: RBAC, RESTful Design, Query Optimization, AI Tooling (Cursor, Claude, Copilot), LLM API Integration, Jest
+\end{itemize}
+
+  %-------------------------
+  % Certifications
+  %-------------------------
+  \section{Certifications}
+  \begin{itemize}[leftmargin=0.15in, label={}, noitemsep]
+    \item \href{https://www.udemy.com/certificate/UC-c12fca53-ef2a-493b-8431-a8d501dd73a0/}{\textbf{Basics of Cloud Computing | Fundamentals of Cloud Computing}} --- Udemy \hfill \textit{Oct 2025}
+    \item \href{https://www.udemy.com/certificate/UC-c02c2081-b2a4-458d-89fd-e1c878dcb4f5/}{\textbf{CyberSecurity Bootcamp Course}} --- Udemy \hfill \textit{Oct 2025}
+  \end{itemize}
+
+
+%-------------------------
+% Education
+%-------------------------
+\section{Education}
+\textbf{Bachelor of Technology in Information Technology} \hfill 2022 -- 2026 \\
+Uka Tarsadia University \hfill CGPA: 7.99/10
+
+\end{document}
