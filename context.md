@@ -68,8 +68,7 @@ Mailpit Web UI: `http://localhost:8025` captures all outgoing mail safely for in
 data/
 ├── Samir_Shaikh_FullStack_Developer.pdf   Resume PDF automatically attached to emails
 ├── body.txt                              Default email cover letter template (live reload)
-├── subject.txt                           Default email subject line (live reload)
-└── req.txt                               Project requirements and scope document
+└── subject.txt                           Default email subject line (live reload)
 
 src/
 ├── app.js                 Express assembly: middleware + route mounting only

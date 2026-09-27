@@ -37,8 +37,7 @@ A lightweight, production-ready backend service designed to send bulk or individ
 data/
 ├── Samir_Shaikh_FullStack_Developer.pdf   Resume PDF automatically attached to emails
 ├── body.txt                              Default email cover letter template (live reload)
-├── subject.txt                           Default email subject line (live reload)
-└── req.txt                               Project requirements and scope document
+└── subject.txt                           Default email subject line (live reload)
 
 src/
 ├── app.js                 Express app assembly (middleware + routes)
