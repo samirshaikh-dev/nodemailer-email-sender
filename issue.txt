@@ -2,8 +2,8 @@ https://nodemailer-email-sender-d7cj.onrender.com/health
 
 {
 "status": "unavailable",
-"uptimeSeconds": 52.068,
-"timestamp": "2026-09-27T06:50:48.444Z",
+"uptimeSeconds": 183.18,
+"timestamp": "2026-09-27T07:20:57.646Z",
 "checks": {
 "mongo": {
 "status": "unavailable",
@@ -11,9 +11,14 @@ https://nodemailer-email-sender-d7cj.onrender.com/health
 "latencyMs": 0
 },
 "smtp": {
+"status": "disabled",
+"required": false,
+"latencyMs": 0
+},
+"resend": {
 "status": "unavailable",
 "required": true,
-"latencyMs": 5001,
+"latencyMs": 163,
 "cached": false
 },
 "redis": {
@@ -23,3 +28,6 @@ https://nodemailer-email-sender-d7cj.onrender.com/health
 }
 }
 }
+
+
+2026-09-27T07:19:05.960Z warn: Resend readiness probe failed This API key is restricted to only send emails

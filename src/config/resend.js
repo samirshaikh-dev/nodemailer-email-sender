@@ -94,6 +94,16 @@ export const verifyResend = async (timeoutMs = 5000) => {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null);
+      // Resend API keys created with "Sending access" (recommended least-privilege permission)
+      // are rejected on GET /api-keys with "This API key is restricted to only send emails".
+      // Receiving this response proves outbound HTTPS works and the key is authentic and active for sending.
+      if (
+        data?.message?.includes("restricted to only send emails") ||
+        data?.name === "restricted_api_key"
+      ) {
+        return true;
+      }
+
       throw new Error(
         data?.message || `Resend authentication failed with status ${response.status}`
       );
