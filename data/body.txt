@@ -1,25 +1,29 @@
 Hi Hiring Team,
 
-I'm Samir Shaikh, a Full Stack Developer (React, Next.js, Node.js, PostgreSQL) open to Junior / Associate Full Stack roles (Remote).
+I’m Samir Shaikh, a Full Stack Developer specializing in **React, Next.js, Node.js, TypeScript, GraphQL, and PostgreSQL**, currently exploring Junior / Associate Full Stack opportunities.
 
-To hit the ground running with minimal onboarding, I’ve focused my internships on shipping production systems and solving real engineering bottlenecks:
+I bring hands-on experience building and improving real-world applications across backend APIs, full-stack platforms, distributed systems, and automation:
 
-• **Multi-Product Backend & APIs (Logicwind):** Delivered across multiple production codebases - engineered new GraphQL/REST APIs, integrated 3rd-party services (Dittofeed, Loops), and cut live API latency by **~30%** with DataLoader and Redis caching.
+• **Production API Performance — Logicwind:** Reduced GraphQL API latency by **~30%** by resolving N+1 queries with DataLoader and implementing Redis caching, while working on Node.js microservices, GraphQL APIs, and third-party integrations.
 
-• **Solo End-to-End Delivery (Xira Infotech):** Rebuilt a static job portal into a dynamic production platform in **30 days** as the sole developer — authored the Node/Express REST API from scratch, designed PostgreSQL schemas, and implemented RBAC.
+• **End-to-End Ownership — Xira Infotech:** Rebuilt a static job board into a production-ready platform in **30 days**, owning PostgreSQL schema design, 15+ REST APIs, dynamic Next.js functionality, JWT/RBAC, dashboards, and Razorpay integration.
 
-• **Distributed Architecture (AI Triage Platform):** Engineered a **6+ microservice backend** integrating LLM ticket classification, asynchronous Redis/BullMQ task queues, and Prometheus/Grafana observability.
+• **AI & Distributed Systems:** Built a **6+ microservice** customer ticket-triage platform using LLM classification, Redis/BullMQ, Docker, and Prometheus/Grafana for asynchronous processing and observability.
 
-My resume is attached, and you can inspect my live applications and source code here:
+• **Automation & Real-Time Systems:** Built a WhatsApp campaign automation platform with a React Native client, Express backend, Google Sheets integration, rate-limited processing, Socket.io, and automated deployment.
 
-• Portfolio: https://samir-portfolio-dev.vercel.app/
-• GitHub: https://github.com/samirshaikh-dev
-• LinkedIn: https://www.linkedin.com/in/samirshaikh-dev/
+I’ve attached my resume and included my work below so you can quickly review my projects and code:
 
-Are you currently hiring for Junior or Associate Full Stack roles, or would you be open to a brief 10-minute chat this week?
+**Portfolio:** https://samir-portfolio-dev.vercel.app/
+**GitHub:** https://github.com/samirshaikh-dev
+**LinkedIn:** https://www.linkedin.com/in/samirshaikh-dev/
+
+If you’re currently hiring for a Junior / Associate Full Stack role, I’d be glad to discuss the opportunity. **If there isn’t an exact opening right now, I’d also appreciate being considered for any similar role that aligns with my background.**
+
+Thank you for your time.
 
 Best regards,
-Samir Shaikh
-Full Stack Developer | Surat, India (Open to Remote)
-Phone: +91 8320927182
-Email: shaikh.samir.work@gmail.com
+**Samir Shaikh**
+Full Stack Developer | Surat, Gujarat, India | Open to Remote
++91 8320927182
+shaikh.samir.work@gmail.com
