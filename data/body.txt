@@ -1,24 +1,23 @@
 Hi Hiring Team,
 
-I’m Samir Shaikh, a Full Stack Developer specializing in **React, Next.js, Node.js, TypeScript, GraphQL, and PostgreSQL**, currently exploring Junior / Associate Full Stack opportunities.
+I’m Samir Shaikh, a Full Stack Developer focused on **React, Next.js, Node.js, TypeScript, GraphQL, and PostgreSQL**. I’m currently exploring **Junior / Associate Full Stack opportunities** where I can contribute directly to product development and take ownership of features end-to-end.
 
-I bring hands-on experience building and improving real-world applications across backend APIs, full-stack platforms, distributed systems, and automation:
+What I can bring to a startup/product team:
 
-• **Production API Performance — Logicwind:** Reduced GraphQL API latency by **~30%** by resolving N+1 queries with DataLoader and implementing Redis caching, while working on Node.js microservices, GraphQL APIs, and third-party integrations.
+* **End-to-end ownership:** Rebuilt a job board into a production-ready platform in **30 days**, handling PostgreSQL schema design, 15+ REST APIs, Next.js functionality, JWT/RBAC, dashboards, and Razorpay integration.
+* **Performance & backend engineering:** At Logicwind, helped reduce GraphQL API latency by **~30%** by resolving N+1 queries with DataLoader and implementing Redis caching across Node.js services.
+* **AI & scalable systems:** Built a **6+ microservice** ticket-triage platform using LLM classification, Redis/BullMQ, Docker, and Prometheus/Grafana for asynchronous processing and observability.
+* **Automation & integrations:** Built a WhatsApp campaign automation platform involving React Native, Express, Google Sheets, Socket.io, rate-limited processing, and automated deployment.
 
-• **End-to-End Ownership — Xira Infotech:** Rebuilt a static job board into a production-ready platform in **30 days**, owning PostgreSQL schema design, 15+ REST APIs, dynamic Next.js functionality, JWT/RBAC, dashboards, and Razorpay integration.
+I enjoy working on problems where I can go beyond just writing UI or APIs — understanding the requirement, designing the solution, building the feature, and making sure it works reliably in a real product.
 
-• **AI & Distributed Systems:** Built a **6+ microservice** customer ticket-triage platform using LLM classification, Redis/BullMQ, Docker, and Prometheus/Grafana for asynchronous processing and observability.
-
-• **Automation & Real-Time Systems:** Built a WhatsApp campaign automation platform with a React Native client, Express backend, Google Sheets integration, rate-limited processing, Socket.io, and automated deployment.
-
-I’ve attached my resume and included my work below so you can quickly review my projects and code:
+I’ve attached my resume, and you can quickly review some of my work here:
 
 **Portfolio:** https://samir-portfolio-dev.vercel.app/
 **GitHub:** https://github.com/samirshaikh-dev
 **LinkedIn:** https://www.linkedin.com/in/samirshaikh-dev/
 
-If you’re currently hiring for a Junior / Associate Full Stack role, I’d be glad to discuss the opportunity. **If there isn’t an exact opening right now, I’d also appreciate being considered for any similar role that aligns with my background.**
+If you’re currently hiring for a **Junior / Associate Full Stack Developer** role, I’d be glad to have a conversation. **If there isn’t an exact opening at the moment, I’d also appreciate being considered for a similar role where my background could be a fit.**
 
 Thank you for your time.
 
