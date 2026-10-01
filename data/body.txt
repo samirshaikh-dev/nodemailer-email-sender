@@ -2,7 +2,7 @@ Hi Hiring Team,
 
 I’m Samir Shaikh, a Full Stack Developer focused on **React, Next.js, Node.js, TypeScript, GraphQL, and PostgreSQL**. I’m currently exploring **Junior / Associate Full Stack opportunities** where I can contribute directly to product development and take ownership of features end-to-end.
 
-What I can bring to a startup/product team:
+What I can bring to a product team:
 
 * **End-to-end ownership:** Rebuilt a job board into a production-ready platform in **30 days**, handling PostgreSQL schema design, 15+ REST APIs, Next.js functionality, JWT/RBAC, dashboards, and Razorpay integration.
 * **Performance & backend engineering:** At Logicwind, helped reduce GraphQL API latency by **~30%** by resolving N+1 queries with DataLoader and implementing Redis caching across Node.js services.
