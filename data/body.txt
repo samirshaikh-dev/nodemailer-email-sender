@@ -1,25 +1,28 @@
 Hi Hiring Team,
 
-I’m Samir Shaikh, a Full Stack Developer focused on **React, Next.js, Node.js, TypeScript, GraphQL, and PostgreSQL**. I’m currently exploring **Junior / Associate Full Stack opportunities** where I can contribute directly to product development and take ownership of features end-to-end.
+I’m **Samir Shaikh**, a Full Stack Developer specializing in **React, Next.js, Node.js, TypeScript, GraphQL, and PostgreSQL**, currently exploring **Junior / Associate Full Stack Developer opportunities**.
 
-What I can bring to a product team:
+I have hands-on experience building real-world applications across **full-stack development, backend APIs, databases, distributed systems, AI integrations, and automation**.
 
-* **End-to-end ownership:** Rebuilt a job board into a production-ready platform in **30 days**, handling PostgreSQL schema design, 15+ REST APIs, Next.js functionality, JWT/RBAC, dashboards, and Razorpay integration.
-* **Performance & backend engineering:** At Logicwind, helped reduce GraphQL API latency by **~30%** by resolving N+1 queries with DataLoader and implementing Redis caching across Node.js services.
-* **AI & scalable systems:** Built a **6+ microservice** ticket-triage platform using LLM classification, Redis/BullMQ, Docker, and Prometheus/Grafana for asynchronous processing and observability.
-* **Automation & integrations:** Built a WhatsApp campaign automation platform involving React Native, Express, Google Sheets, Socket.io, rate-limited processing, and automated deployment.
+A few highlights of my experience:
 
-I enjoy working on problems where I can go beyond just writing UI or APIs — understanding the requirement, designing the solution, building the feature, and making sure it works reliably in a real product.
+• **API Performance — Logicwind:** Reduced GraphQL API latency by **~30%** by resolving N+1 queries with DataLoader and implementing Redis caching while working with Node.js microservices, GraphQL APIs, and third-party integrations.
 
-I’ve attached my resume, and you can quickly review some of my work here:
+• **End-to-End Development — Xira Infotech:** Rebuilt a static job board into a production-ready platform in **30 days**, working across PostgreSQL schema design, 15+ REST APIs, Next.js, JWT/RBAC, dashboards, and Razorpay integration.
+
+• **AI & Distributed Systems:** Built a **6+ microservice** customer ticket-triage platform using LLM classification, Redis/BullMQ, Docker, and Prometheus/Grafana for asynchronous processing and observability.
+
+• **Backend Automation & Reliability:** Built an email automation platform for job-application workflows, implementing **BullMQ/Redis asynchronous processing, SMTP/Resend provider abstraction, failure tracking, structured logging, request tracing, health checks, and Dockerized local testing**.
+
+I’ve attached my resume for your review. You can also explore my work here:
 
 **Portfolio:** https://samir-portfolio-dev.vercel.app/
 **GitHub:** https://github.com/samirshaikh-dev
 **LinkedIn:** https://www.linkedin.com/in/samirshaikh-dev/
 
-If you’re currently hiring for a **Junior / Associate Full Stack Developer** role, I’d be glad to have a conversation. **If there isn’t an exact opening at the moment, I’d also appreciate being considered for a similar role where my background could be a fit.**
+If you’re currently hiring for a **Junior / Associate Full Stack Developer** role, I’d be glad to discuss the opportunity. If there isn’t an exact opening at the moment, I’d also appreciate being considered for **similar full-stack or software development opportunities** that match my background.
 
-Thank you for your time.
+Thank you for your time and consideration.
 
 Best regards,
 **Samir Shaikh**
